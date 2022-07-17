@@ -1,4 +1,5 @@
 import pandas as pd 
+import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.axes
@@ -60,3 +61,18 @@ def graph_cluster_wc(df: pd.DataFrame, tokenized_col: str,
         ax.set_xlabel(xTitle)
     else:
         barAx.set_xlabel(xTitle)
+
+def graph_all_cluster_wc(col_desc:pd.DataFrame,cluster_col:str):
+    """graphs top 5 most common words in each cluster
+    """
+    classes = np.sort(col_desc[cluster_col].unique())
+    r = int(np.ceil(np.sqrt(classes.shape[0])))
+    c = int(np.ceil(classes.shape[0]/r))
+    fig, ax = plt.subplots(r,c,figsize=(15,8))
+    for i in range(r):
+        for j in range(c):
+            if i*c+j<classes.shape[0]:
+                cluster = classes[i*c+j]
+                graph_cluster_wc(col_desc,'tokenized',cluster_col,cluster,ax=ax[i][j])
+                ax[i][j].title.set_text(f'cluster {cluster}')
+    plt.tight_layout()
