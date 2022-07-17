@@ -8,11 +8,11 @@ def get_second_deriv(series:pd.Series)->pd.Series:
     at every point in the series
     """
     df = series.rename('x').to_frame()
-    df['next'] = df.x.shift()
-    df['prev'] = df.x.shift(-1)
+    df['next'] = df['x'].shift()
+    df['prev'] = df['x'].shift(-1)
     return df.apply(
         lambda row:
-        row.next+row.prev - 2*row.x,
+        row['next']+row['prev'] - 2*row['x'],
         axis=1
     )
 
@@ -24,6 +24,7 @@ def graph_elbow(series:pd.Series)->int:
     ax = sns.lineplot(x=series.index,y=series)
     elbow = get_second_deriv(series).argmax()
     ax.axvline(elbow,0,ax.get_ylim()[1],color='red',**{'alpha':0.5})
+    ax.set_xlabel('Parameter')
     return elbow
 
 def graph_cluster_wc(df: pd.DataFrame, tokenized_col: str,
@@ -48,9 +49,14 @@ def graph_cluster_wc(df: pd.DataFrame, tokenized_col: str,
         .value_counts()
         .head(head)
     )
-    sns.barplot(
-        x=tokens_exploded.index,
-        y=tokens_exploded/cluster.shape[0],
-        ax=ax
+    barAx = sns.barplot(
+        x=tokens_exploded/cluster.shape[0],
+        y=tokens_exploded.index,
+        ax=ax,
+        orient='h'
     )
-    plt.xticks(rotation=45)
+    xTitle = "percentage of cluster with word occurence"
+    if ax is not None:
+        ax.set_xlabel(xTitle)
+    else:
+        barAx.set_xlabel(xTitle)
