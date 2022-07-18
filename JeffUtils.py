@@ -91,3 +91,13 @@ def graph_all_cluster_wc(col_desc:pd.DataFrame,
                 )
                 ax[i][j].title.set_text(f'cluster {cluster}')
     plt.tight_layout()
+    
+def jeff_histplot(data:pd.Series,**kwargs):
+    """the old sns.distplot is deprecated,
+    but its replacement sns.histplot looks really ugly. 
+    This simply calls the new histplot with prettier parameters
+    that I like so I don't have to type it out everytime
+    """
+    return sns.histplot(data,alpha=0.2,edgecolor='grey',**kwargs)
+    
+    
