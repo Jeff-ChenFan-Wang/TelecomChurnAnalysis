@@ -1,6 +1,7 @@
 TODO
 
-examine via strata income,month, rev_mean, area
+examine via strata 
+    income,month, rev_mean, area
 
 decode ethnic, crclscod, prizm_social_one, hhstatin
 
