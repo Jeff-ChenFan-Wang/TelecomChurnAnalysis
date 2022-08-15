@@ -99,5 +99,25 @@ def jeff_histplot(data:pd.Series,**kwargs):
     that I like so I don't have to type it out everytime
     """
     return sns.histplot(data,alpha=0.2,edgecolor='grey',**kwargs)
+
+def double_hist(data1:pd.Series, data2:pd.Series, bins, **kwargs):
+    ax = sns.histplot(
+        data1,
+        stat='density',
+        alpha=0.5,
+        bins=bins,
+        edgecolor=None,
+        color='cyan'
+    )
+    sns.histplot(
+        data2,
+        stat='density',
+        ax=ax,
+        alpha=0.5,
+        bins=bins,
+        edgecolor=None,
+        color='orange'
+    )
+    return ax
     
     
