@@ -8,7 +8,7 @@ dependencies:
   - networkx=2.7.1
   - numpy=1.22.0
   - pandas=1.1.4
-  - scikit_learn=1.1.1
+  - scikit-learn=1.1.1
   - scipy=1.7.3
   - seaborn=0.11.0
   - spacy=3.3.1
