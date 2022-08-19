@@ -101,7 +101,7 @@ def clean_raw():
 	)
 	clean_data[remain_cols] = raw_data[remain_cols]
 	clean_data['numbcars'] = clean_data['numbcars'].fillna(0)
-	clean_data.columns = clean_data.columns.sort_values()
+	clean_data = clean_data[np.sort(clean_data.columns)]
 
 	clean_data.to_csv(DATASET_FOLDER_PATH+'clean_data.csv')
 
@@ -126,7 +126,7 @@ def convert_binary_cols(raw_data:pd.DataFrame, clean_data:pd.DataFrame):
 		clean_data[key] = raw_data[key].map(binary_str_map_dct[key])
 
 
-def get_perf_mia_corrs(raw_data:pd.DataFrame)->pd.MultiIndex:
+def get_perf_mia_corrs(raw_data:pd.DataFrame):
 	'''Get columns that hav perfectly correlated missingness with each other
 	'''
 	percentage_na = (
