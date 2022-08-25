@@ -13,12 +13,16 @@ def clean_raw():
 	raw_data = raw_data.set_index('Customer_ID')
 	raw_data.columns = map(str.lower,raw_data.columns)
 	raw_data = raw_data[np.sort(raw_data.columns)]
+ 
+	#drop columns that have weird codes where data descriptions are
+	#no longer available and hence are no longer interpretable
+	raw_data = raw_data.drop(['ethnic','dwllsize','hhstatin'],axis=1)
 	print('loaded data')
 
 	#create an undirected graph of perfectly correlated missing columns
 	#with each column as a node then group columns with perfectly correlated 
-	#missingness together this way we can treat multiple columns with
-	#dentical missingness simultaneously
+	#missingness together. This way we can treat multiple columns with
+	#identical missingness simultaneously
 	perf_miss_cols = get_perf_miss_cols(raw_data)
 
 	#impute mode for the 2 rows with missing area data
@@ -79,12 +83,16 @@ def clean_raw():
 		set(raw_data.columns)
 		-set(clean_data.columns)
 	)
-	
-	print("handled missingness, adding last cols")
  
 	clean_data[remain_cols] = raw_data[remain_cols]
-	convert_binary_cols(raw_data,clean_data)
+	#number of cars missing implies no cars
 	clean_data['numbcars'] = clean_data['numbcars'].fillna(0)
+	print("handled missingness, treating last cols")
+ 
+	#convert columns with boolean data to 0 and 1
+	convert_binary_cols(clean_data)
+	clean_marital(clean_data)
+	clean_prizm_social(clean_data)
 	clean_data = clean_data[np.sort(clean_data.columns)]
 
 	clean_data.to_csv(DATASET_FOLDER_PATH+EXPORT_FILE_NAME)
@@ -106,6 +114,27 @@ def get_perf_miss_cols(raw_data:pd.DataFrame)->list:
 	perf_miss_cols.sort()
 	return perf_miss_cols
 
+def clean_marital(clean_data:pd.DataFrame):
+    marital_dict = {
+		'S':'single',
+		'M':'married',
+		'A':'separated',
+		'B':'unmarried',
+		'U':'unknown'
+	}
+    clean_data['marital'] = clean_data['marital'].map(marital_dict)
+    
+def clean_prizm_social(clean_data:pd.DataFrame):
+    prizm_dict = {
+		'S':'suburb',
+		'U':'urban',
+		'T':'town',
+		'C':'city',
+		'R':'unknown'
+	}
+    clean_data['prizm_social_one'] = \
+        clean_data['prizm_social_one'].map(prizm_dict)
+
 def get_perf_mia_corrs(raw_data:pd.DataFrame)->pd.Series:
 	'''Get columns that hav perfectly correlated missingness with each other
 	'''
@@ -118,7 +147,7 @@ def get_perf_mia_corrs(raw_data:pd.DataFrame)->pd.Series:
 	)
 	return perf_corr_cols
 
-def convert_binary_cols(raw_data:pd.DataFrame, clean_data:pd.DataFrame):
+def convert_binary_cols(clean_data:pd.DataFrame):
 	'''convert binary columns with binary dtypes to 1 or 0
 	'''
 	binary_str_map_dct = {
