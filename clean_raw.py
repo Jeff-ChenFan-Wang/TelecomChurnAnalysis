@@ -16,6 +16,10 @@ def clean_raw():
  
 	#drop columns that have weird codes where data descriptions are
 	#no longer available and hence are no longer interpretable
+	#We could OHE them and throw them in the model but since the end
+	#goal is to create a dashboard where a user can input a customer profile,
+	#uninterpretable variables cannot be entered by a human operator and hence 
+	#should not be used
 	raw_data = raw_data.drop(['ethnic','dwllsize','hhstatin'],axis=1)
 	print('loaded data')
 
@@ -93,6 +97,12 @@ def clean_raw():
 	convert_binary_cols(clean_data)
 	clean_marital(clean_data)
 	clean_prizm_social(clean_data)
+	
+	#create a simplified column of whether household has children
+	clean_data['has_kid'] = clean_data[
+		clean_data.columns[clean_data.columns.str.contains('kid')]
+	].apply(lambda row: row.any(),axis=1).astype(int)
+	#sort columns alphabetically
 	clean_data = clean_data[np.sort(clean_data.columns)]
 
 	clean_data.to_csv(DATASET_FOLDER_PATH+EXPORT_FILE_NAME)
