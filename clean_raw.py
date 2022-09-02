@@ -12,7 +12,7 @@ def clean_raw():
 	try:
 		raw_data = pd.read_csv(DATASET_FOLDER_PATH+IMPORT_FILE_NAME)
 	except:
-		print(f'raw data {IMPORT_FILE_NAME} cannot be found IN {DATASET_FOLDER_PATH}')
+		print(f'raw data {IMPORT_FILE_NAME} cannot be found in {DATASET_FOLDER_PATH}')
 		return
 	raw_data = raw_data.set_index('Customer_ID')
 	raw_data.columns = map(str.lower,raw_data.columns)
