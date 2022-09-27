@@ -37,15 +37,9 @@ class PipelineFactory:
         self.radom_seed=radom_seed 
         
         self.original_cols = raw_data.columns
-        self.cat_cols = raw_data.select_dtypes('object').columns
-        
-        #since certain binary columns are encoded as integers and floats, 
-        #we have to separate them out from the data to determine which are
-        #truly numerical columns and which are actually binary columns
-        num_cols = raw_data.select_dtypes(np.number).columns
-        self.bin_cols = num_cols[raw_data[num_cols].nunique()==2]
-        num_cols = pd.Index(set(num_cols)-set(self.bin_cols))
-        self.num_cols = num_cols
+        self.cat_cols = raw_data.select_dtypes(include='object').columns
+        self.num_cols = raw_data.select_dtypes(include=np.number).columns
+        self.bin_cols = raw_data.select_dtypes(include=bool).columns
     
     def create_pipe(self, pca=False, *, impute:bool, normalize:bool)->customPipe:
         """Factory method to create pipelines. Define whether the pipeline
