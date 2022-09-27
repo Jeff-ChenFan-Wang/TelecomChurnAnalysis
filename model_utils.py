@@ -9,6 +9,7 @@ from sklearn.preprocessing import (
 from sklearn.compose import ColumnTransformer
 from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
+from typing import List
 
 class customPipe(Pipeline):
     """custom subclass of the sklearn Pipeline that has a working
@@ -41,6 +42,21 @@ class PipelineFactory:
         self.num_cols = raw_data.select_dtypes(include=np.number).columns
         self.bin_cols = raw_data.select_dtypes(include=bool).columns
     
+    def col_names_to_idx(self,columns:List[str])->List[int]:
+        """turns array of column names into array of column indices
+        so that column transformer knows which columns to transform if
+        feature names are lost inside the pipeline
+
+        Args:
+            columns (List[str]): list like of column names 
+
+        Returns:
+            List[int]: list like of indices of column names as they appeared
+                in the original column order. Names that don't exist in 
+                original columns are ignored. 
+        """
+        return np.in1d(self.original_cols,columns).nonzero()[0]
+    
     def create_pipe(self, pca=False, *, impute:bool, normalize:bool)->customPipe:
         """Factory method to create pipelines. Define whether the pipeline
         needs to impute missing data, and whether numerical columns should 
@@ -68,7 +84,7 @@ class PipelineFactory:
                 input parameters, and also a functioning feature names method.
         """
         if pca:
-            return 
+            return self.make_pca_impute_scale_pipe()
         else:
             if (impute is None) or (normalize is None):
                 raise Exception('please instruct whether to impute or scale')
@@ -85,32 +101,46 @@ class PipelineFactory:
     def make_pca_impute_scale_pipe(self)->Pipeline:
         """creates a pipeline that imputes data using mode impuation, then
         normalizes and one-hot encodes appropriate columns, and finally
-        PCA's the result. Since 
+        PCA's the result. Since PCA does not retain feature names, we give 
+        up on retaining feature names completely to make a more efficient
+        pipeline instead. 
 
         Returns:
             Pipeline: sklearn preprocessing pipeline 
-        """
-        numerical_pipe = Pipeline([
-            
-        ])
-        
+        """        
         pipe = Pipeline([
             ('impute',SimpleImputer(strategy='most_frequent')),
             (
-                'columnTransform',
+                'ScaleNumerical',
+                ColumnTransformer([
+                    ('categorical_vars','passthrough',
+                        self.col_names_to_idx(self.cat_cols)),
+                    ('numeric_vars',StandardScaler(),
+                        self.col_names_to_idx(self.num_cols)),
+                    ('binary_vars','passthrough',
+                        self.col_names_to_idx(self.bin_cols))
+                ])
+            ),
+            (
+                'OhePca',
                 ColumnTransformer([
                     (
                         'categorical_vars',
                         OneHotEncoder(handle_unknown='infrequent_if_exist'),
-                        self.cat_cols
+                        self.col_names_to_idx(self.cat_cols)
                     ),
-                    ('numeric_vars',StandardScaler(),self.num_cols),
-                    ('binary_vars','passthrough',self.bin_cols)
+                    (
+                        'numeric_vars',
+                        PCA(random_state=self.radom_seed),
+                        self.col_names_to_idx(self.num_cols)
+                    ),
+                    ('binary_vars','passthrough',
+                        self.col_names_to_idx(self.bin_cols))
                 ])
-            ),
-            ('PCA',PCA(random_state=self.radom_seed))
-            
+            )       
         ])
+        
+        return pipe
     
     def make_impute_ohe_scale_pipe(self)->customPipe:
         """creates a pipeline that imputes data using mode impuation, then
