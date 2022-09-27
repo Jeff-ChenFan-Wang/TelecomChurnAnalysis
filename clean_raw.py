@@ -7,12 +7,18 @@ IMPORT_FILE_NAME = 'telecomChurn.zip'
 EXPORT_FILE_NAME = 'clean_data.csv'
 
 def clean_raw():
+	"""reads in raw dataset downloaded at relative path's dataset folder 
+ 	(No OS recognition, must activate anaconda in project folder) and 
+  	outputs a cleaned version ready to be run by the model in the same folder 
+   	as well.
+	"""
 	clean_data = pd.DataFrame()
 
 	try:
 		raw_data = pd.read_csv(DATASET_FOLDER_PATH+IMPORT_FILE_NAME)
 	except:
-		print(f'raw data {IMPORT_FILE_NAME} cannot be found in {DATASET_FOLDER_PATH}')
+		print(f'raw data {IMPORT_FILE_NAME} cannot be found in \
+      			{DATASET_FOLDER_PATH}')
 		return
 	raw_data = raw_data.set_index('Customer_ID')
 	raw_data.columns = map(str.lower,raw_data.columns)
@@ -105,7 +111,8 @@ def clean_raw():
 	#create a simplified column of whether household has children
 	clean_data['has_kid'] = clean_data[
 		clean_data.columns[clean_data.columns.str.contains('kid')]
-	].apply(lambda row: row.any(),axis=1).astype(int)
+	].apply(lambda row: row.any(),axis=1)
+ 
 	#sort columns alphabetically
 	clean_data = clean_data[np.sort(clean_data.columns)]
 
@@ -165,18 +172,21 @@ def convert_binary_cols(clean_data:pd.DataFrame):
 	'''convert binary columns with binary dtypes to 1 or 0
 	'''
 	binary_str_map_dct = {
-		'asl_flag':{'N':0,'Y':1},
-		'creditcd':{'N':0,'Y':1},
-		'dwlltype':{'S':0,'M':1},
-		'infobase':{'N':0,'M':1},
-		'kid0_2':{'U':0,'Y':1},
-		'kid3_5':{'U':0,'Y':1},
-		'kid6_10':{'U':0,'Y':1},
-		'kid11_15':{'U':0,'Y':1},
-		'kid16_17':{'U':0,'Y':1},
-		'ownrent':{'O':1,'R':0},
-		'refurb_new':{'N':0,'R':1},
-		'new_cell':{'U':np.nan,'Y':1,'N':0}
+		'asl_flag':{'N':False,'Y':True},
+		'creditcd':{'N':False,'Y':True},
+		'dwlltype':{'S':False,'M':True},
+		'forgntvl':{0:False,1:True},
+  		'rv':{0:False,1:True},
+		'truck':{0:False,1:True},
+		'infobase':{'N':False,'M':True},
+		'kid0_2':{'U':False,'Y':True},
+		'kid3_5':{'U':False,'Y':True},
+		'kid6_10':{'U':False,'Y':True},
+		'kid11_15':{'U':False,'Y':True},
+		'kid16_17':{'U':False,'Y':True},
+		'ownrent':{'R':False,'O':True},
+		'refurb_new':{'N':False,'R':True},
+		'new_cell':{'U':np.nan,'Y':True,'N':False}
 	}
 	for key in binary_str_map_dct.keys():
 		clean_data[key] = clean_data[key].map(binary_str_map_dct[key])
