@@ -37,10 +37,25 @@ class PipelineFactory:
         #predetermined seed so that results are reproducible
         self.radom_seed=radom_seed 
         
-        self.original_cols = raw_data.columns
+        self.full_col_order = raw_data.columns
         self.cat_cols = raw_data.select_dtypes(include='object').columns
         self.num_cols = raw_data.select_dtypes(include=np.number).columns
         self.bin_cols = raw_data.select_dtypes(include=bool).columns
+
+    def get_col_indices(self, col_names:np.ndarray[str])->np.ndarray[int]:
+        """turns array of column names into array of column indices
+        so that column transformer knows which columns to transform if
+        feature names are lost inside the pipeline
+
+        Args:
+            columns (List[str]): list like of column names 
+
+        Returns:
+            List[int]: list like of indices of column names as they appeared
+                in the original column order. Names that don't exist in 
+                original columns are ignored. 
+        """
+        return np.in1d(self.full_col_order, col_names).nonzero()[0]
     
     def col_names_to_idx(self,columns:List[str])->List[int]:
         """turns array of column names into array of column indices
@@ -153,27 +168,28 @@ class PipelineFactory:
         
         pipe = customPipe([
             ('impute',SimpleImputer(strategy='most_frequent')),
-            ( #A function transformer is needed to turn the previous step output
-             #into a pandas dataframe with named columns so that feature
-             #names can be maintained thoughout the pipeline
-                'retainFeatureName',
-                FunctionTransformer(
-                    lambda x: pd.DataFrame(x, columns=self.original_cols)
-                )
-            ),
             (
                 'columnTransform',
                 ColumnTransformer([
                     (
                         'categorical_vars',
                         OneHotEncoder(handle_unknown='infrequent_if_exist'),
-                        self.cat_cols
+                        self.get_col_indices(self.cat_cols)
                     ),
-                    ('numeric_vars',StandardScaler(),self.num_cols),
-                    ('binary_vars','passthrough',self.bin_cols)
+                    (
+                        'numeric_vars',StandardScaler(),
+                        self.get_col_indices(self.num_cols)
+                    ),
+                    (
+                        'binary_vars','passthrough',
+                        self.get_col_indices(self.bin_cols)
+                    )
                 ])
             )
         ])
+
+        self.full_col_order = np.hstack([self.cat_cols,self.num_cols,self.bin_cols])
+        
         return pipe
     
     def make_impute_ohe_pipe(self)->customPipe:
@@ -190,7 +206,7 @@ class PipelineFactory:
             (
                 'retainFeatureName',
                 FunctionTransformer(
-                    lambda x: pd.DataFrame(x, columns=self.original_cols)
+                    lambda x: pd.DataFrame(x, columns=self.full_col_order)
                 )
             ),
             (
