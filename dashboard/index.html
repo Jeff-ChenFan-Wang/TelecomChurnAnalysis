@@ -6,8 +6,8 @@
     <meta name="msapplication-tap-highlight" content="no">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
 	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <link rel="preconnect" href="https://fonts.gstatic.com">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.0/jquery.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 	</head>
@@ -39,35 +39,48 @@
         </center>
         </div>
         </div> 
-            <form id="myform" action="#" method="POST">
-        <div class="input-field col s12">
-            <input type="number" name="age" id="age" step=".01">
-            <label for="age">Bundled Handset Age (days)</label>
-        </div>
-
-
-        <div class="input-field col s12">
-            <input type="number" name="year" id="year">
-            <label for="year">Monthly Charge</label>
-        </div>
-
-        
-        <div class="input-field col s12">
-            <input type="number" name="year" id="year">
-            <label for="year">Monthly Minutes of Calls</label>
-        </div>
-
-        <div class="row">
-            <div class="col s3"></div>
-            <div class="col s12"><center>
-            <button style="width:300;background-color: #6698e3;" class="btn" type="submit">Get Churn Probability</button></center>
+        <form id="myform" action="#" method="POST">
+            <div class="input-field col s12">
+                <input type="number" name="age" id="age" step=".01">
+                <label for="age">Bundled Handset Age (days)</label>
             </div>
-        <div class="col s3"></div>
-        </div>
+
+
+            <div class="input-field col s12">
+                <input type="number" name="charge" id="charge">
+                <label for="charge">Monthly Charge</label>
+            </div>
+
+            
+            <div class="input-field col s12">
+                <input type="number" name="minute" id="minute">
+                <label for="minute">Monthly Minutes of Calls</label>
+            </div>
+
+            <div class="row">
+                <div class="col s3"></div>
+                <div class="col s12"><center>
+                    <button style="width:300;background-color: #6698e3;" class="btn" type="submit">
+                        Get Churn Probability
+                    </button>   
+                </div>
+            <div class="col s3"></div>
+            </div>
 
 
         </form>
-
+        <h5>
+            <div class="row">
+                <div class="col s1">
+                </div><center>
+                <div class="col s10" id='prediction'>
+                </div></center>
+                <div class="col s1">
+                </div>
+          </div>
+        </h5>
+        <div class="col s1 m3 l4"></div>
+        </div></div></div>
  
         <style>
             .input-field label {
@@ -84,5 +97,13 @@
             color: #6698e3;
         }
         </style>
+        <script>
+	
+            $("#myform").submit(function(e) {
+            e.preventDefault();
+            h='<div class="card-panel blue white-text darken-3">22% Probability Customer Will Churn</div>';
+            $('#prediction').html(h);
+            })
+        </script>
 	</body>
 </html>
