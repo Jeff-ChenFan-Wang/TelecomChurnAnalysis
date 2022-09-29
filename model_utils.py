@@ -10,14 +10,6 @@ from sklearn.compose import ColumnTransformer
 from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
 from typing import List
-
-class customPipe(Pipeline):
-    """custom subclass of the sklearn Pipeline that has a working
-    get_feature_names_out() method since the official one is still broken as of 
-    version 1.1.2
-    """
-    def get_feature_names_out(self, input_features=None):
-        return self.steps[-1][1].get_feature_names_out()
     
 class PipelineFactory:
     """A factory class for producing different sklearn pipelines. 
@@ -41,21 +33,6 @@ class PipelineFactory:
         self.cat_cols = raw_data.select_dtypes(include='object').columns
         self.num_cols = raw_data.select_dtypes(include=np.number).columns
         self.bin_cols = raw_data.select_dtypes(include=bool).columns
-
-    def get_col_indices(self, col_names:np.ndarray[str])->np.ndarray[int]:
-        """turns array of column names into array of column indices
-        so that column transformer knows which columns to transform if
-        feature names are lost inside the pipeline
-
-        Args:
-            columns (List[str]): list like of column names 
-
-        Returns:
-            List[int]: list like of indices of column names as they appeared
-                in the original column order. Names that don't exist in 
-                original columns are ignored. 
-        """
-        return np.in1d(self.full_col_order, col_names).nonzero()[0]
     
     def col_names_to_idx(self,columns:List[str])->List[int]:
         """turns array of column names into array of column indices
@@ -70,9 +47,9 @@ class PipelineFactory:
                 in the original column order. Names that don't exist in 
                 original columns are ignored. 
         """
-        return np.in1d(self.original_cols,columns).nonzero()[0]
+        return np.in1d(self.full_col_order,columns).nonzero()[0]
     
-    def create_pipe(self, pca=False, *, impute:bool, normalize:bool)->customPipe:
+    def create_pipe(self, pca=False, *, impute:bool, normalize:bool)->Pipeline:
         """Factory method to create pipelines. Define whether the pipeline
         needs to impute missing data, and whether numerical columns should 
         be normalized (in the sense that it should be standardized). 
@@ -149,15 +126,17 @@ class PipelineFactory:
                         PCA(random_state=self.radom_seed),
                         self.col_names_to_idx(self.num_cols)
                     ),
-                    ('binary_vars','passthrough',
-                        self.col_names_to_idx(self.bin_cols))
+                    (
+                        'binary_vars','passthrough',
+                        self.col_names_to_idx(self.bin_cols)
+                    )
                 ])
             )       
         ])
         
         return pipe
     
-    def make_impute_ohe_scale_pipe(self)->customPipe:
+    def make_impute_ohe_scale_pipe(self)->Pipeline:
         """creates a pipeline that imputes data using mode impuation, then
         normalizes and one-hot encodes appropriate columns
 
@@ -166,7 +145,7 @@ class PipelineFactory:
                 get_feature_names_out() method.
         """
         
-        pipe = customPipe([
+        pipe = Pipeline([
             ('impute',SimpleImputer(strategy='most_frequent')),
             (
                 'columnTransform',
@@ -174,25 +153,27 @@ class PipelineFactory:
                     (
                         'categorical_vars',
                         OneHotEncoder(handle_unknown='infrequent_if_exist'),
-                        self.get_col_indices(self.cat_cols)
+                        self.col_names_to_idx(self.cat_cols)
                     ),
                     (
                         'numeric_vars',StandardScaler(),
-                        self.get_col_indices(self.num_cols)
+                        self.col_names_to_idx(self.num_cols)
                     ),
                     (
                         'binary_vars','passthrough',
-                        self.get_col_indices(self.bin_cols)
+                        self.col_names_to_idx(self.bin_cols)
                     )
                 ])
             )
         ])
 
-        self.full_col_order = np.hstack([self.cat_cols,self.num_cols,self.bin_cols])
+        self.full_col_order = np.hstack([
+            self.cat_cols,self.num_cols,self.bin_cols
+        ])
         
         return pipe
     
-    def make_impute_ohe_pipe(self)->customPipe:
+    def make_impute_ohe_pipe(self)->Pipeline:
         """creates a pipeline that imputes data using mode impuation, then 
         one-hot encodes appropriate columns but does not normalize numerical
         columns
@@ -201,7 +182,7 @@ class PipelineFactory:
             customPipe: basically a sklearn pipeline but with a functioning
                 get_feature_names_out() method.
         """
-        pipe = customPipe([
+        pipe = Pipeline([
             ('impute',SimpleImputer(strategy='most_frequent')),
             (
                 'retainFeatureName',
@@ -215,16 +196,27 @@ class PipelineFactory:
                     (
                         'categorical_vars',
                         OneHotEncoder(handle_unknown='infrequent_if_exist'),
-                        self.cat_cols
+                        self.col_names_to_idx(self.cat_cols)
                     ),
-                    ('numeric_vars','passthrough',self.num_cols),
-                    ('binary_vars','passthrough',self.bin_cols)
+                    (
+                        'numeric_vars','passthrough',
+                        self.col_names_to_idx(self.num_cols)
+                    ),
+                    (
+                        'binary_vars','passthrough',
+                        self.col_names_to_idx(self.bin_cols)
+                    )
                 ])
             )
         ])
+
+        self.full_col_order = np.hstack([
+            self.cat_cols,self.num_cols,self.bin_cols
+        ])
+
         return pipe
     
-    def make_ohe_pipe(self)->customPipe:
+    def make_ohe_pipe(self)->Pipeline:
         """creates a pipeline that one-hot encodes appropriate columns but 
         does not normalize numerical columns nor impute any missing data.
 
@@ -232,18 +224,29 @@ class PipelineFactory:
             customPipe: basically a sklearn pipeline but with a functioning
                 get_feature_names_out() method.
         """
-        pipe = customPipe([
+        pipe = Pipeline([
              (
                 'columnTransform',
                 ColumnTransformer([
                     (
                         'categorical_vars',
                         OneHotEncoder(handle_unknown='infrequent_if_exist'),
-                        self.cat_cols
+                        self.col_names_to_idx(self.cat_cols)
                     ),
-                    ('numeric_vars','passthrough',self.num_cols),
-                    ('binary_vars','passthrough',self.bin_cols)
+                    (
+                        'numeric_vars','passthrough',
+                        self.col_names_to_idx(self.num_cols)
+                    ),
+                    (
+                        'binary_vars','passthrough',
+                        self.col_names_to_idx(self.bin_cols)
+                    )
                 ])
             )
         ])
+
+        self.full_col_order = np.hstack([
+            self.cat_cols,self.num_cols,self.bin_cols
+        ])
+
         return pipe
