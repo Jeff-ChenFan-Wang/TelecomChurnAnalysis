@@ -27,12 +27,12 @@ class PipelineFactory:
             raw_data (pd.DataFrame): raw data for pipelines to be fitted against
         """
         #predetermined seed so that results are reproducible
-        self.radom_seed=radom_seed 
+        self.random_seed=radom_seed 
         
-        self.full_col_order = raw_data.columns
         self.cat_cols = raw_data.select_dtypes(include='object').columns
         self.num_cols = raw_data.select_dtypes(include=np.number).columns
         self.bin_cols = raw_data.select_dtypes(include=bool).columns
+        self.full_col_order = np.hstack([self.cat_cols,self.num_cols,self.bin_cols])
     
     def col_names_to_idx(self,columns:List[str])->List[int]:
         """turns array of column names into array of column indices
@@ -123,7 +123,7 @@ class PipelineFactory:
                     ),
                     (
                         'numeric_vars',
-                        PCA(random_state=self.radom_seed),
+                        PCA(random_state=self.random_seed),
                         self.col_names_to_idx(self.num_cols)
                     ),
                     (
