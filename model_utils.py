@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.preprocessing import (
     StandardScaler, 
     OneHotEncoder, 
@@ -29,10 +29,10 @@ class PipelineFactory:
         #predetermined seed so that results are reproducible
         self.random_seed=radom_seed 
         
+        self.original_cols = raw_data.columns
         self.cat_cols = raw_data.select_dtypes(include='object').columns
         self.num_cols = raw_data.select_dtypes(include=np.number).columns
         self.bin_cols = raw_data.select_dtypes(include=bool).columns
-        self.full_col_order = np.hstack([self.cat_cols,self.num_cols,self.bin_cols])
     
     def col_names_to_idx(self,columns:List[str])->List[int]:
         """turns array of column names into array of column indices
@@ -47,7 +47,7 @@ class PipelineFactory:
                 in the original column order. Names that don't exist in 
                 original columns are ignored. 
         """
-        return np.in1d(self.full_col_order,columns).nonzero()[0]
+        return np.in1d(self.original_cols,columns).nonzero()[0]
     
     def create_pipe(self, pca=False, *, impute:bool, normalize:bool)->Pipeline:
         """Factory method to create pipelines. Define whether the pipeline
@@ -99,42 +99,49 @@ class PipelineFactory:
 
         Returns:
             Pipeline: sklearn preprocessing pipeline 
-        """        
-        pipe = Pipeline([
-            ('impute',SimpleImputer(strategy='most_frequent')),
-            (
-                'ScaleNumerical',
+        """
+        num_pipe = Pipeline([
+            ('select_num', 
                 ColumnTransformer([
-                    ('categorical_vars','passthrough',
-                        self.col_names_to_idx(self.cat_cols)),
-                    ('numeric_vars',StandardScaler(),
+                    ('select_num','passthrough', 
                         self.col_names_to_idx(self.num_cols)),
-                    ('binary_vars','passthrough',
-                        self.col_names_to_idx(self.bin_cols))
                 ])
             ),
-            (
-                'OhePca',
-                ColumnTransformer([
-                    (
-                        'categorical_vars',
-                        OneHotEncoder(handle_unknown='infrequent_if_exist'),
-                        self.col_names_to_idx(self.cat_cols)
-                    ),
-                    (
-                        'numeric_vars',
-                        PCA(random_state=self.random_seed),
-                        self.col_names_to_idx(self.num_cols)
-                    ),
-                    (
-                        'binary_vars','passthrough',
-                        self.col_names_to_idx(self.bin_cols)
-                    )
-                ])
-            )       
+            ('impute',SimpleImputer(strategy='most_frequent')),
+            ('scale',StandardScaler()),
+            ('pca', PCA(random_state=self.random_seed))
         ])
         
-        return pipe
+        bin_pipe = Pipeline([
+            ('select_bin', 
+                ColumnTransformer([
+                    ('select_num','passthrough', 
+                        self.col_names_to_idx(self.bin_cols)),
+                ])
+            ),
+            ('impute',SimpleImputer(strategy='most_frequent')),
+        ])
+        
+        cat_pipe = Pipeline([
+            ('select_cat', 
+                ColumnTransformer([
+                    ('select_num','passthrough', 
+                        self.col_names_to_idx(self.cat_cols)),
+                ])
+            ),
+            ('impute',SimpleImputer(strategy='most_frequent')),
+            ('ohe', 
+                OneHotEncoder(handle_unknown='infrequent_if_exist')
+            ),
+        ])
+        
+        union = FeatureUnion([
+            ('num',num_pipe),
+            ('bin',bin_pipe),
+            ('cat',cat_pipe)
+        ])
+        
+        return union
     
     def make_impute_ohe_scale_pipe(self)->Pipeline:
         """creates a pipeline that imputes data using mode impuation, then
@@ -167,7 +174,7 @@ class PipelineFactory:
             )
         ])
 
-        self.full_col_order = np.hstack([
+        self.original_cols = np.hstack([
             self.cat_cols,self.num_cols,self.bin_cols
         ])
         
@@ -187,7 +194,7 @@ class PipelineFactory:
             (
                 'retainFeatureName',
                 FunctionTransformer(
-                    lambda x: pd.DataFrame(x, columns=self.full_col_order)
+                    lambda x: pd.DataFrame(x, columns=self.original_cols)
                 )
             ),
             (
@@ -210,7 +217,7 @@ class PipelineFactory:
             )
         ])
 
-        self.full_col_order = np.hstack([
+        self.original_cols = np.hstack([
             self.cat_cols,self.num_cols,self.bin_cols
         ])
 
@@ -245,7 +252,7 @@ class PipelineFactory:
             )
         ])
 
-        self.full_col_order = np.hstack([
+        self.original_cols = np.hstack([
             self.cat_cols,self.num_cols,self.bin_cols
         ])
 
