@@ -119,6 +119,7 @@ class PipelineFactory:
                         self.col_names_to_idx(self.bin_cols)),
                 ])
             ),
+            ('convert',FunctionTransformer(lambda df: df.astype(int))),
             ('impute',SimpleImputer(strategy='most_frequent')),
         ])
         
@@ -141,7 +142,7 @@ class PipelineFactory:
             ('cat',cat_pipe)
         ])
         
-        return union
+        return Pipeline([('union',union)])
     
     def make_impute_ohe_scale_pipe(self)->Pipeline:
         """creates a pipeline that imputes data using mode impuation, then
