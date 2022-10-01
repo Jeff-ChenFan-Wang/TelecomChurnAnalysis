@@ -3,14 +3,22 @@ import numpy as np
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.preprocessing import (
     StandardScaler, 
-    OneHotEncoder, 
+    OneHotEncoder,
     FunctionTransformer
 )
 from sklearn.compose import ColumnTransformer
 from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
-from typing import List
-    
+from typing import List    
+from sklearn.base import BaseEstimator
+
+class CustomFeatureUnion(FeatureUnion):
+    """TODO
+    """
+    def get_transformer(transformer_name:str)->BaseEstimator:
+        """TODO
+        """
+        
 class PipelineFactory:
     """A factory class for producing different sklearn pipelines. 
     As of version 1.1.2 for sci-kit learn, pipelines still cannot retain 
@@ -119,7 +127,7 @@ class PipelineFactory:
                         self.col_names_to_idx(self.bin_cols)),
                 ])
             ),
-            ('convert',FunctionTransformer(lambda df: df.astype(int))),
+            ('convert',FunctionTransformer(to_binary)),
             ('impute',SimpleImputer(strategy='most_frequent')),
         ])
         
@@ -142,7 +150,7 @@ class PipelineFactory:
             ('cat',cat_pipe)
         ])
         
-        return Pipeline([('union',union)])
+        return union
     
     def make_impute_ohe_scale_pipe(self)->Pipeline:
         """creates a pipeline that imputes data using mode impuation, then
@@ -258,3 +266,16 @@ class PipelineFactory:
         ])
 
         return pipe
+
+def to_binary(data:np.ndarray)->np.ndarray:
+    """Utility function to convert booleans to integers since certain
+    sklearn transformers don't play well with booleans for some reason
+
+    Args:
+        data (np.ndarray): input data with all values as booleans
+
+    Returns:
+        np.ndarray: data transformed with all values to 1 for true 
+        and 0 for false
+    """
+    return data.astype(int)
