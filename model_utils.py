@@ -174,7 +174,7 @@ class PipelineFactory:
             ('bin',bin_pipe),
             ('cat',cat_pipe)
         ])
-        
+        #TODO PCA'd feature names aren't fixed
         combine.set_feature_names(self.num_cols,self.bin_cols,self.cat_cols)
         
         return combine
