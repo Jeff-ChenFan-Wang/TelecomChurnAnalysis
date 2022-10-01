@@ -15,10 +15,9 @@ from sklearn.base import BaseEstimator
 class CustomFeatureUnion(FeatureUnion):
     """TODO
     """
-    def get_transformer(transformer_name:str)->BaseEstimator:
-        """TODO
-        """
-        
+    def get_transformer(self,transformer_name:str)->BaseEstimator:
+        return dict(self.transformer_list)[transformer_name]
+
 class PipelineFactory:
     """A factory class for producing different sklearn pipelines. 
     As of version 1.1.2 for sci-kit learn, pipelines still cannot retain 
