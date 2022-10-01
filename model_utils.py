@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.pipeline import Pipeline, FeatureUnion
+from sklearn.pipeline import NotFittedError, Pipeline, FeatureUnion
 from sklearn.preprocessing import (
     StandardScaler, 
     OneHotEncoder,
@@ -13,10 +13,39 @@ from typing import List
 from sklearn.base import BaseEstimator
 
 class CustomFeatureUnion(FeatureUnion):
-    """TODO
+    """Feature Union subclass that implements get_feature_name out
     """
     def get_transformer(self,transformer_name:str)->BaseEstimator:
+        """access transformer in feature union by name
+
+        Args:
+            transformer_name (str): transformer name, accepted ones are
+                'num', 'bin', or 'cat' for numerical data pipeline, binary
+                data pipeline, and categorical data pipeline respectively
+
+        Returns:
+            BaseEstimator: Pipeline or transformer
+        """
         return dict(self.transformer_list)[transformer_name]
+    
+    def set_feature_names(
+            self,num_cols:np.ndarray[str],
+            bin_cols:np.ndarray[str],
+            cat_cols:np.ndarray[str]
+        ):
+        self.num_cols = num_cols
+        self.bin_cols = bin_cols
+        self.cat_cols = cat_cols
+    
+    def get_feature_names_out(self, input_features=None):
+        if self.__sklearn_is_fitted__():
+            return np.hstack([
+                self.num_cols,self.bin_cols,
+                (
+                    dict(self.transformer_list)['cat']
+                    .steps[2][1].get_feature_names_out(self.cat_cols)
+                )
+            ])
 
 class PipelineFactory:
     """A factory class for producing different sklearn pipelines. 
@@ -83,11 +112,10 @@ class PipelineFactory:
                 input parameters, and also a functioning feature names method.
         """
         if pca:
-            return self.make_pca_impute_scale_pipe()
+            return self.make_pca_pipe()
         else:
             if (impute is None) or (normalize is None):
                 raise Exception('please instruct whether to impute or scale')
-            
             if impute & normalize:
                 return self.make_impute_ohe_scale_pipe()
             elif impute & ~normalize:
@@ -97,12 +125,10 @@ class PipelineFactory:
             else:
                 raise NotImplementedError('Cannot determine pipeline type')
             
-    def make_pca_impute_scale_pipe(self)->Pipeline:
-        """creates a pipeline that imputes data using mode impuation, then
-        normalizes and one-hot encodes appropriate columns, and finally
-        PCA's the result. Since PCA does not retain feature names, we give 
-        up on retaining feature names completely to make a more efficient
-        pipeline instead. 
+    def make_pca_pipe(self)->CustomFeatureUnion:
+        """creates a feature union of pipelines that imputes data using mode 
+        impuation, normalizes and PCA's numerical columns, and one-hot encodes 
+        categorical columns. 
 
         Returns:
             Pipeline: sklearn preprocessing pipeline 
@@ -122,7 +148,7 @@ class PipelineFactory:
         bin_pipe = Pipeline([
             ('select_bin', 
                 ColumnTransformer([
-                    ('select_num','passthrough', 
+                    ('select_bin','passthrough', 
                         self.col_names_to_idx(self.bin_cols)),
                 ])
             ),
@@ -133,7 +159,7 @@ class PipelineFactory:
         cat_pipe = Pipeline([
             ('select_cat', 
                 ColumnTransformer([
-                    ('select_num','passthrough', 
+                    ('select_cat','passthrough', 
                         self.col_names_to_idx(self.cat_cols)),
                 ])
             ),
@@ -143,13 +169,15 @@ class PipelineFactory:
             ),
         ])
         
-        union = FeatureUnion([
+        combine = CustomFeatureUnion([
             ('num',num_pipe),
             ('bin',bin_pipe),
             ('cat',cat_pipe)
         ])
         
-        return union
+        combine.set_feature_names(self.num_cols,self.bin_cols,self.cat_cols)
+        
+        return combine
     
     def make_impute_ohe_scale_pipe(self)->Pipeline:
         """creates a pipeline that imputes data using mode impuation, then
@@ -160,31 +188,51 @@ class PipelineFactory:
                 get_feature_names_out() method.
         """
         
-        pipe = Pipeline([
-            ('impute',SimpleImputer(strategy='most_frequent')),
-            (
-                'columnTransform',
+        num_pipe = Pipeline([
+            ('select_num', 
                 ColumnTransformer([
-                    (
-                        'categorical_vars',
-                        OneHotEncoder(handle_unknown='infrequent_if_exist'),
-                        self.col_names_to_idx(self.cat_cols)
-                    ),
-                    (
-                        'numeric_vars',StandardScaler(),
-                        self.col_names_to_idx(self.num_cols)
-                    ),
-                    (
-                        'binary_vars','passthrough',
-                        self.col_names_to_idx(self.bin_cols)
-                    )
+                    ('select_num','passthrough', 
+                        self.col_names_to_idx(self.num_cols)),
                 ])
-            )
+            ),
+            ('impute',SimpleImputer(strategy='most_frequent')),
+            ('scale',StandardScaler()),
+            ('pca', PCA(random_state=self.random_seed))
         ])
-
-        self.original_cols = np.hstack([
-            self.cat_cols,self.num_cols,self.bin_cols
+        
+        bin_pipe = Pipeline([
+            ('select_bin', 
+                ColumnTransformer([
+                    ('select_bin','passthrough', 
+                        self.col_names_to_idx(self.bin_cols)),
+                ])
+            ),
+            ('convert',FunctionTransformer(to_binary)),
+            ('impute',SimpleImputer(strategy='most_frequent')),
         ])
+        
+        cat_pipe = Pipeline([
+            ('select_cat', 
+                ColumnTransformer([
+                    ('select_cat','passthrough', 
+                        self.col_names_to_idx(self.cat_cols)),
+                ])
+            ),
+            ('impute',SimpleImputer(strategy='most_frequent')),
+            ('ohe', 
+                OneHotEncoder(handle_unknown='infrequent_if_exist')
+            ),
+        ])
+        
+        combine = CustomFeatureUnion([
+            ('num',num_pipe),
+            ('bin',bin_pipe),
+            ('cat',cat_pipe)
+        ])
+        
+        combine.set_feature_names(self.num_cols,self.bin_cols,self.cat_cols)
+        
+        return combine
         
         return pipe
     
