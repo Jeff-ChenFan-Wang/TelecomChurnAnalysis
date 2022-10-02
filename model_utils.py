@@ -85,7 +85,10 @@ class PipelineFactory:
         """
         return np.in1d(self.original_cols,columns).nonzero()[0]
     
-    def create_pipe(self, pca=False, *, impute:bool, normalize:bool)->Pipeline:
+    def create_pipe(
+                self, pca = False, *, 
+                impute:bool, normalize:bool, 
+                pca_comps:int)->Pipeline:
         """Factory method to create pipelines. Define whether the pipeline
         needs to impute missing data, and whether numerical columns should 
         be normalized (in the sense that it should be standardized). 
@@ -101,6 +104,7 @@ class PipelineFactory:
         Args:
             impute (bool): whether to use mode impution on missing data
             normalize (bool): whether to standardize data
+            pca_comps (int): number of components to retain in PCA
 
         Raises:
             Exception: impute or normalize isn't defined
@@ -112,7 +116,7 @@ class PipelineFactory:
                 input parameters, and also a functioning feature names method.
         """
         if pca:
-            return self.make_pca_pipe()
+            return self.make_pca_pipe(pca_comps)
         else:
             if (impute is None) or (normalize is None):
                 raise Exception('please instruct whether to impute or scale')
@@ -125,10 +129,13 @@ class PipelineFactory:
             else:
                 raise NotImplementedError('Cannot determine pipeline type')
             
-    def make_pca_pipe(self)->CustomFeatureUnion:
+    def make_pca_pipe(self, n_comps:int)->CustomFeatureUnion:
         """creates a feature union of pipelines that imputes data using mode 
         impuation, normalizes and PCA's numerical columns, and one-hot encodes 
         categorical columns. 
+        
+        Args:
+            n_comps (int): number of components to retain in PCA
 
         Returns:
             Pipeline: sklearn preprocessing pipeline 
@@ -143,7 +150,7 @@ class PipelineFactory:
             ('impute',SimpleImputer(strategy='most_frequent')),
             ('scale',StandardScaler()),
             ('pca', PCA(random_state=self.random_seed))
-        ])
+        ])#TODO cutdown on PCA comps using n_comps
         
         bin_pipe = Pipeline([
             ('select_bin', 

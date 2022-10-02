@@ -28,6 +28,7 @@ def graph_elbow(series:pd.Series)->int:
     elbow = get_second_deriv(series).argmax()+series.index.min()
     ax.axvline(elbow,0,ax.get_ylim()[1],color='red',**{'alpha':0.5})
     ax.set_xlabel('Parameter')
+    ax.set_title(f'Optimal Cluster {elbow}')
     return elbow
 
 def graph_cluster_wc(df:pd.DataFrame, tokenized_col:str,
