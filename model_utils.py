@@ -1,3 +1,4 @@
+from ctypes import ArgumentError
 import pandas as pd
 import numpy as np
 from sklearn.pipeline import NotFittedError, Pipeline, FeatureUnion
@@ -31,21 +32,36 @@ class CustomFeatureUnion(FeatureUnion):
     def set_feature_names(
             self,num_cols:np.ndarray[str],
             bin_cols:np.ndarray[str],
-            cat_cols:np.ndarray[str]
+            cat_cols:np.ndarray[str],
+            is_pca:bool=False
         ):
         self.num_cols = num_cols
         self.bin_cols = bin_cols
         self.cat_cols = cat_cols
+        self.is_pca = is_pca
     
     def get_feature_names_out(self, input_features=None):
         if self.__sklearn_is_fitted__():
-            return np.hstack([
-                self.num_cols,self.bin_cols,
-                (
-                    dict(self.transformer_list)['cat']
-                    .steps[2][1].get_feature_names_out(self.cat_cols)
-                )
-            ])
+            if self.is_pca:
+                return np.hstack([
+                    (
+                        dict(self.transformer_list)['num']
+                        .named_steps['pca'].get_feature_names_out()
+                    ),
+                    self.bin_cols,
+                    (
+                        dict(self.transformer_list)['cat']
+                        .named_steps['ohe'].get_feature_names_out(self.cat_cols)
+                    )
+                ])
+            else:
+                return np.hstack([
+                    self.num_cols,self.bin_cols,
+                    (
+                        dict(self.transformer_list)['cat']
+                        .named_steps['ohe'].get_feature_names_out(self.cat_cols)
+                    )
+                ])
 
 class PipelineFactory:
     """A factory class for producing different sklearn pipelines. 
@@ -88,7 +104,7 @@ class PipelineFactory:
     def create_pipe(
                 self, pca = False, *, 
                 impute:bool, normalize:bool, 
-                pca_comps:int)->Pipeline:
+                pca_comps:int=0)->Pipeline:
         """Factory method to create pipelines. Define whether the pipeline
         needs to impute missing data, and whether numerical columns should 
         be normalized (in the sense that it should be standardized). 
@@ -116,7 +132,10 @@ class PipelineFactory:
                 input parameters, and also a functioning feature names method.
         """
         if pca:
-            return self.make_pca_pipe(pca_comps)
+            if pca_comps ==0:
+                raise ArgumentError('Please set number of PCA comps to keep')
+            else:
+                return self.make_pca_pipe(pca_comps)
         else:
             if (impute is None) or (normalize is None):
                 raise Exception('please instruct whether to impute or scale')
@@ -181,145 +200,14 @@ class PipelineFactory:
             ('bin',bin_pipe),
             ('cat',cat_pipe)
         ])
-        #TODO PCA'd feature names aren't fixed
-        combine.set_feature_names(self.num_cols,self.bin_cols,self.cat_cols)
+        combine.set_feature_names(
+            self.num_cols,
+            self.bin_cols,
+            self.cat_cols,
+            is_pca = True
+        )
         
         return combine
-    
-    def make_impute_ohe_scale_pipe(self)->Pipeline:
-        """creates a pipeline that imputes data using mode impuation, then
-        normalizes and one-hot encodes appropriate columns
-
-        Returns:
-            customPipe: basically a sklearn pipeline but with a functioning
-                get_feature_names_out() method.
-        """
-        
-        num_pipe = Pipeline([
-            ('select_num', 
-                ColumnTransformer([
-                    ('select_num','passthrough', 
-                        self.col_names_to_idx(self.num_cols)),
-                ])
-            ),
-            ('impute',SimpleImputer(strategy='most_frequent')),
-            ('scale',StandardScaler()),
-            ('pca', PCA(random_state=self.random_seed))
-        ])
-        
-        bin_pipe = Pipeline([
-            ('select_bin', 
-                ColumnTransformer([
-                    ('select_bin','passthrough', 
-                        self.col_names_to_idx(self.bin_cols)),
-                ])
-            ),
-            ('convert',FunctionTransformer(to_binary)),
-            ('impute',SimpleImputer(strategy='most_frequent')),
-        ])
-        
-        cat_pipe = Pipeline([
-            ('select_cat', 
-                ColumnTransformer([
-                    ('select_cat','passthrough', 
-                        self.col_names_to_idx(self.cat_cols)),
-                ])
-            ),
-            ('impute',SimpleImputer(strategy='most_frequent')),
-            ('ohe', 
-                OneHotEncoder(handle_unknown='infrequent_if_exist')
-            ),
-        ])
-        
-        combine = CustomFeatureUnion([
-            ('num',num_pipe),
-            ('bin',bin_pipe),
-            ('cat',cat_pipe)
-        ])
-        
-        combine.set_feature_names(self.num_cols,self.bin_cols,self.cat_cols)
-        
-        return combine
-        
-        return pipe
-    
-    def make_impute_ohe_pipe(self)->Pipeline:
-        """creates a pipeline that imputes data using mode impuation, then 
-        one-hot encodes appropriate columns but does not normalize numerical
-        columns
-
-        Returns:
-            customPipe: basically a sklearn pipeline but with a functioning
-                get_feature_names_out() method.
-        """
-        pipe = Pipeline([
-            ('impute',SimpleImputer(strategy='most_frequent')),
-            (
-                'retainFeatureName',
-                FunctionTransformer(
-                    lambda x: pd.DataFrame(x, columns=self.original_cols)
-                )
-            ),
-            (
-                'columnTransform',
-                ColumnTransformer([
-                    (
-                        'categorical_vars',
-                        OneHotEncoder(handle_unknown='infrequent_if_exist'),
-                        self.col_names_to_idx(self.cat_cols)
-                    ),
-                    (
-                        'numeric_vars','passthrough',
-                        self.col_names_to_idx(self.num_cols)
-                    ),
-                    (
-                        'binary_vars','passthrough',
-                        self.col_names_to_idx(self.bin_cols)
-                    )
-                ])
-            )
-        ])
-
-        self.original_cols = np.hstack([
-            self.cat_cols,self.num_cols,self.bin_cols
-        ])
-
-        return pipe
-    
-    def make_ohe_pipe(self)->Pipeline:
-        """creates a pipeline that one-hot encodes appropriate columns but 
-        does not normalize numerical columns nor impute any missing data.
-
-        Returns:
-            customPipe: basically a sklearn pipeline but with a functioning
-                get_feature_names_out() method.
-        """
-        pipe = Pipeline([
-             (
-                'columnTransform',
-                ColumnTransformer([
-                    (
-                        'categorical_vars',
-                        OneHotEncoder(handle_unknown='infrequent_if_exist'),
-                        self.col_names_to_idx(self.cat_cols)
-                    ),
-                    (
-                        'numeric_vars','passthrough',
-                        self.col_names_to_idx(self.num_cols)
-                    ),
-                    (
-                        'binary_vars','passthrough',
-                        self.col_names_to_idx(self.bin_cols)
-                    )
-                ])
-            )
-        ])
-
-        self.original_cols = np.hstack([
-            self.cat_cols,self.num_cols,self.bin_cols
-        ])
-
-        return pipe
 
 def to_binary(data:np.ndarray)->np.ndarray:
     """Utility function to convert booleans to integers since certain
