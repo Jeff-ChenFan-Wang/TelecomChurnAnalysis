@@ -1,24 +1,68 @@
+from ctypes import ArgumentError
 import pandas as pd
 import numpy as np
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import NotFittedError, Pipeline, FeatureUnion
 from sklearn.preprocessing import (
     StandardScaler, 
-    OneHotEncoder, 
+    OneHotEncoder,
     FunctionTransformer
 )
 from sklearn.compose import ColumnTransformer
 from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
-from typing import List
+from typing import List    
+from sklearn.base import BaseEstimator
 
-class customPipe(Pipeline):
-    """custom subclass of the sklearn Pipeline that has a working
-    get_feature_names_out() method since the official one is still broken as of 
-    version 1.1.2
+class CustomFeatureUnion(FeatureUnion):
+    """Feature Union subclass that implements get_feature_name out
     """
-    def get_feature_names_out(self, input_features=None):
-        return self.steps[-1][1].get_feature_names_out()
+    def get_transformer(self,transformer_name:str)->BaseEstimator:
+        """access transformer in feature union by name
+
+        Args:
+            transformer_name (str): transformer name, accepted ones are
+                'num', 'bin', or 'cat' for numerical data pipeline, binary
+                data pipeline, and categorical data pipeline respectively
+
+        Returns:
+            BaseEstimator: Pipeline or transformer
+        """
+        return dict(self.transformer_list)[transformer_name]
     
+    def set_feature_names(
+            self,num_cols:np.ndarray[str],
+            bin_cols:np.ndarray[str],
+            cat_cols:np.ndarray[str],
+            is_pca:bool=False
+        ):
+        self.num_cols = num_cols
+        self.bin_cols = bin_cols
+        self.cat_cols = cat_cols
+        self.is_pca = is_pca
+    
+    def get_feature_names_out(self, input_features=None):
+        if self.__sklearn_is_fitted__():
+            if self.is_pca:
+                return np.hstack([
+                    (
+                        dict(self.transformer_list)['num']
+                        .named_steps['cut_to_n_comps'].get_feature_names_out()
+                    ),
+                    self.bin_cols,
+                    (
+                        dict(self.transformer_list)['cat']
+                        .named_steps['ohe'].get_feature_names_out(self.cat_cols)
+                    )
+                ])
+            else:
+                return np.hstack([
+                    self.num_cols,self.bin_cols,
+                    (
+                        dict(self.transformer_list)['cat']
+                        .named_steps['ohe'].get_feature_names_out(self.cat_cols)
+                    )
+                ])
+
 class PipelineFactory:
     """A factory class for producing different sklearn pipelines. 
     As of version 1.1.2 for sci-kit learn, pipelines still cannot retain 
@@ -35,7 +79,7 @@ class PipelineFactory:
             raw_data (pd.DataFrame): raw data for pipelines to be fitted against
         """
         #predetermined seed so that results are reproducible
-        self.radom_seed=radom_seed 
+        self.random_seed=radom_seed 
         
         self.original_cols = raw_data.columns
         self.cat_cols = raw_data.select_dtypes(include='object').columns
@@ -57,7 +101,10 @@ class PipelineFactory:
         """
         return np.in1d(self.original_cols,columns).nonzero()[0]
     
-    def create_pipe(self, pca=False, *, impute:bool, normalize:bool)->customPipe:
+    def create_pipe(
+                self, pca = False, *, 
+                impute:bool, normalize:bool, 
+                pca_comps:int=0)->Pipeline:
         """Factory method to create pipelines. Define whether the pipeline
         needs to impute missing data, and whether numerical columns should 
         be normalized (in the sense that it should be standardized). 
@@ -73,6 +120,7 @@ class PipelineFactory:
         Args:
             impute (bool): whether to use mode impution on missing data
             normalize (bool): whether to standardize data
+            pca_comps (int): number of components to retain in PCA
 
         Raises:
             Exception: impute or normalize isn't defined
@@ -84,11 +132,13 @@ class PipelineFactory:
                 input parameters, and also a functioning feature names method.
         """
         if pca:
-            return self.make_pca_impute_scale_pipe()
+            if pca_comps ==0:
+                raise ArgumentError('Please set number of PCA comps to keep')
+            else:
+                return self.make_pca_pipe(pca_comps)
         else:
             if (impute is None) or (normalize is None):
                 raise Exception('please instruct whether to impute or scale')
-            
             if impute & normalize:
                 return self.make_impute_ohe_scale_pipe()
             elif impute & ~normalize:
@@ -98,136 +148,81 @@ class PipelineFactory:
             else:
                 raise NotImplementedError('Cannot determine pipeline type')
             
-    def make_pca_impute_scale_pipe(self)->Pipeline:
-        """creates a pipeline that imputes data using mode impuation, then
-        normalizes and one-hot encodes appropriate columns, and finally
-        PCA's the result. Since PCA does not retain feature names, we give 
-        up on retaining feature names completely to make a more efficient
-        pipeline instead. 
+    def make_pca_pipe(self, n_comps:int)->CustomFeatureUnion:
+        """creates a feature union of pipelines that imputes data using mode 
+        impuation, normalizes and PCA's numerical columns, and one-hot encodes 
+        categorical columns. 
+        
+        Args:
+            n_comps (int): number of components to retain in PCA
 
         Returns:
             Pipeline: sklearn preprocessing pipeline 
-        """        
-        pipe = Pipeline([
-            ('impute',SimpleImputer(strategy='most_frequent')),
-            (
-                'ScaleNumerical',
+        """
+        num_pipe = Pipeline([
+            ('select_num', 
                 ColumnTransformer([
-                    ('categorical_vars','passthrough',
-                        self.col_names_to_idx(self.cat_cols)),
-                    ('numeric_vars',StandardScaler(),
+                    ('select_num','passthrough', 
                         self.col_names_to_idx(self.num_cols)),
-                    ('binary_vars','passthrough',
-                        self.col_names_to_idx(self.bin_cols))
                 ])
             ),
-            (
-                'OhePca',
+            ('impute',SimpleImputer(strategy='most_frequent')),
+            ('scale',StandardScaler()),
+            ('pca', PCA(random_state=self.random_seed)),
+            ('select_pca_comps', 
                 ColumnTransformer([
-                    (
-                        'categorical_vars',
-                        OneHotEncoder(handle_unknown='infrequent_if_exist'),
-                        self.col_names_to_idx(self.cat_cols)
-                    ),
-                    (
-                        'numeric_vars',
-                        PCA(random_state=self.radom_seed),
-                        self.col_names_to_idx(self.num_cols)
-                    ),
-                    ('binary_vars','passthrough',
-                        self.col_names_to_idx(self.bin_cols))
+                    ('cut_to_n_comps','passthrough', slice(n_comps)),
                 ])
-            )       
+            ),
         ])
         
-        return pipe
-    
-    def make_impute_ohe_scale_pipe(self)->customPipe:
-        """creates a pipeline that imputes data using mode impuation, then
-        normalizes and one-hot encodes appropriate columns
-
-        Returns:
-            customPipe: basically a sklearn pipeline but with a functioning
-                get_feature_names_out() method.
-        """
+        bin_pipe = Pipeline([
+            ('select_bin', 
+                ColumnTransformer([
+                    ('select_bin','passthrough', 
+                        self.col_names_to_idx(self.bin_cols)),
+                ])
+            ),
+            ('convert',FunctionTransformer(to_binary)),
+            ('impute',SimpleImputer(strategy='most_frequent')),
+        ])
         
-        pipe = customPipe([
-            ('impute',SimpleImputer(strategy='most_frequent')),
-            ( #A function transformer is needed to turn the previous step output
-             #into a pandas dataframe with named columns so that feature
-             #names can be maintained thoughout the pipeline
-                'retainFeatureName',
-                FunctionTransformer(
-                    lambda x: pd.DataFrame(x, columns=self.original_cols)
-                )
+        cat_pipe = Pipeline([
+            ('select_cat', 
+                ColumnTransformer([
+                    ('select_cat','passthrough', 
+                        self.col_names_to_idx(self.cat_cols)),
+                ])
             ),
-            (
-                'columnTransform',
-                ColumnTransformer([
-                    (
-                        'categorical_vars',
-                        OneHotEncoder(handle_unknown='infrequent_if_exist'),
-                        self.cat_cols
-                    ),
-                    ('numeric_vars',StandardScaler(),self.num_cols),
-                    ('binary_vars','passthrough',self.bin_cols)
-                ])
-            )
-        ])
-        return pipe
-    
-    def make_impute_ohe_pipe(self)->customPipe:
-        """creates a pipeline that imputes data using mode impuation, then 
-        one-hot encodes appropriate columns but does not normalize numerical
-        columns
-
-        Returns:
-            customPipe: basically a sklearn pipeline but with a functioning
-                get_feature_names_out() method.
-        """
-        pipe = customPipe([
             ('impute',SimpleImputer(strategy='most_frequent')),
-            (
-                'retainFeatureName',
-                FunctionTransformer(
-                    lambda x: pd.DataFrame(x, columns=self.original_cols)
-                )
+            ('ohe', 
+                OneHotEncoder(handle_unknown='infrequent_if_exist')
             ),
-            (
-                'columnTransform',
-                ColumnTransformer([
-                    (
-                        'categorical_vars',
-                        OneHotEncoder(handle_unknown='infrequent_if_exist'),
-                        self.cat_cols
-                    ),
-                    ('numeric_vars','passthrough',self.num_cols),
-                    ('binary_vars','passthrough',self.bin_cols)
-                ])
-            )
         ])
-        return pipe
-    
-    def make_ohe_pipe(self)->customPipe:
-        """creates a pipeline that one-hot encodes appropriate columns but 
-        does not normalize numerical columns nor impute any missing data.
+        
+        combine = CustomFeatureUnion([
+            ('num',num_pipe),
+            ('bin',bin_pipe),
+            ('cat',cat_pipe)
+        ])
+        combine.set_feature_names(
+            self.num_cols,
+            self.bin_cols,
+            self.cat_cols,
+            is_pca = True
+        )
+        
+        return combine
 
-        Returns:
-            customPipe: basically a sklearn pipeline but with a functioning
-                get_feature_names_out() method.
-        """
-        pipe = customPipe([
-             (
-                'columnTransform',
-                ColumnTransformer([
-                    (
-                        'categorical_vars',
-                        OneHotEncoder(handle_unknown='infrequent_if_exist'),
-                        self.cat_cols
-                    ),
-                    ('numeric_vars','passthrough',self.num_cols),
-                    ('binary_vars','passthrough',self.bin_cols)
-                ])
-            )
-        ])
-        return pipe
+def to_binary(data:np.ndarray)->np.ndarray:
+    """Utility function to convert booleans to integers since certain
+    sklearn transformers don't play well with booleans for some reason
+
+    Args:
+        data (np.ndarray): input data with all values as booleans
+
+    Returns:
+        np.ndarray: data transformed with all values to 1 for true 
+        and 0 for false
+    """
+    return data.astype(int)
