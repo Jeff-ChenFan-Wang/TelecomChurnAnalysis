@@ -46,7 +46,7 @@ class CustomFeatureUnion(FeatureUnion):
                 return np.hstack([
                     (
                         dict(self.transformer_list)['num']
-                        .named_steps['pca'].get_feature_names_out()
+                        .named_steps['cut_to_n_comps'].get_feature_names_out()
                     ),
                     self.bin_cols,
                     (
@@ -168,8 +168,13 @@ class PipelineFactory:
             ),
             ('impute',SimpleImputer(strategy='most_frequent')),
             ('scale',StandardScaler()),
-            ('pca', PCA(random_state=self.random_seed))
-        ])#TODO cutdown on PCA comps using n_comps
+            ('pca', PCA(random_state=self.random_seed)),
+            ('select_pca_comps', 
+                ColumnTransformer([
+                    ('cut_to_n_comps','passthrough', slice(n_comps)),
+                ])
+            ),
+        ])
         
         bin_pipe = Pipeline([
             ('select_bin', 
