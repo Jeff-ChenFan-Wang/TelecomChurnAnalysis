@@ -6,30 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.axes
 
-def get_second_deriv(continuous_data:pd.Series)->pd.Series:
-    """calculates the second derivative 
-    at every point in the series
-    """
-    df = continuous_data.rename('x').to_frame()
-    df['next'] = df['x'].shift()
-    df['prev'] = df['x'].shift(-1)
-    return df.apply(
-        lambda row:
-        row['next']+row['prev'] - 2*row['x'],
-        axis=1
-    )
 
-def graph_elbow(series:pd.Series)->int:
-    """graphs the elbow of a pd.Series of Kmeans inertias
-    to show optimum number of clusters,
-    then returns the optimum number of clusters
-    """
-    ax = sns.lineplot(x=series.index,y=series)
-    elbow = get_second_deriv(series).argmax()+series.index.min()
-    ax.axvline(elbow,0,ax.get_ylim()[1],color='red',**{'alpha':0.5})
-    ax.set_xlabel('Parameter')
-    ax.set_title(f'Optimal Cluster {elbow}')
-    return elbow
 
 def graph_cluster_wc(df:pd.DataFrame, tokenized_col:str,
                      cluster_col:str, clusterId:int, head:int=5,
