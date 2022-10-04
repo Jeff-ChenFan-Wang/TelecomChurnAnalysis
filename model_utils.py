@@ -77,7 +77,11 @@ class PipelineFactory:
     broken
     """
     #list all engineered feature names here
-    ENGINEERED_FEAT_NAMES = ['internetServicesSubbed','KmeansLabel']
+    N_CLUSTERS = 8 #Optimal KMeans cluster found during EDA
+    ENGINEERED_FEAT_NAMES = np.hstack([
+        ['internetServicesSubbed'],
+        [f'KMeansCluster{i}' for i in range(N_CLUSTERS)]
+    ])
     
     def __init__(self, raw_data:pd.DataFrame):
         """initilizes the factory by determining which columns are categorical
@@ -136,8 +140,9 @@ class PipelineFactory:
         ]
         
         if engineer:
+            original_transformers = FeatureUnion(pipe_list.copy())
             kmeans_pipe = self._make_kmeans_pipe(
-                original_transformers = FeatureUnion(pipe_list),
+                original_transformers = original_transformers,
                 random_seed=random_seed
             )
             
@@ -246,10 +251,11 @@ class PipelineFactory:
     
     def _make_kmeans_pipe(self, original_transformers:FeatureUnion,
                           random_seed:int)->Pipeline:
-        kmeans_pipe = Pipeline(
-            original_transformers,
-            ('kmeans',MiniBatchKMeans(n_clusters=8,random_state=random_seed))
-        )
+        kmeans_pipe = Pipeline([
+            ('original_transformers', original_transformers),
+            ('kmeans',MiniBatchKMeans(n_clusters=self.N_CLUSTERS,
+                                      random_state=random_seed))
+        ])
         return kmeans_pipe
 
 def to_binary(data:np.ndarray[bool])->np.ndarray[int]:
