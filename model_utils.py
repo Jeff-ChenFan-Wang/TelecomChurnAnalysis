@@ -1,7 +1,7 @@
 from ctypes import ArgumentError
 import pandas as pd
 import numpy as np
-from sklearn.pipeline import NotFittedError, Pipeline, FeatureUnion
+from sklearn.pipeline import NotFittedError, Pipeline, FeatureUnion, TransformerMixin
 from sklearn.preprocessing import (
     StandardScaler, 
     OneHotEncoder,
@@ -12,6 +12,7 @@ from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
 from typing import List    
 from sklearn.base import BaseEstimator
+from sklearn.cluster import MiniBatchKMeans
 
 class CustomFeatureUnion(FeatureUnion):
     """Customized FeatureUnion class that allows access to transformers 
@@ -76,7 +77,7 @@ class PipelineFactory:
     broken
     """
     #list all engineered feature names here
-    ENGINEERED_FEAT_NAMES = ['internetServicesSubbed']
+    ENGINEERED_FEAT_NAMES = ['internetServicesSubbed','KmeansLabel']
     
     def __init__(self, raw_data:pd.DataFrame):
         """initilizes the factory by determining which columns are categorical
@@ -108,7 +109,7 @@ class PipelineFactory:
         """
         return np.in1d(self.original_cols,columns).nonzero()[0]
             
-    def create_pipe(self, intrnt_sub_list:List[str], *, 
+    def create_pipe(self, intrnt_sub_list:List[str]=None, *, 
                     engineer:bool, random_seed:int, normalize:bool
             )->CustomFeatureUnion:
         """creates a feature union of pipelines 
@@ -136,9 +137,12 @@ class PipelineFactory:
         
         if engineer:
             kmeans_pipe = self._make_kmeans_pipe(
-                pipe_list=pipe_list, random_seed=random_seed)
+                original_transformers = FeatureUnion(pipe_list),
+                random_seed=random_seed
+            )
             
             pipe_list.append(('num_intrnt',num_intrnt_serv_pipe))
+            pipe_list.append(('kmeans',kmeans_pipe))
             engin_cols = self.ENGINEERED_FEAT_NAMES
         else:
             engin_cols = None
@@ -240,9 +244,13 @@ class PipelineFactory:
         ])
         return count_pipe
     
-    def _make_kmeans_pipe(self, random_seed:int)->Pipeline:
-        
-        return
+    def _make_kmeans_pipe(self, original_transformers:FeatureUnion,
+                          random_seed:int)->Pipeline:
+        kmeans_pipe = Pipeline(
+            original_transformers,
+            ('kmeans',MiniBatchKMeans(n_clusters=8,random_state=random_seed))
+        )
+        return kmeans_pipe
 
 def to_binary(data:np.ndarray[bool])->np.ndarray[int]:
     """Utility function to convert booleans to integers since certain
