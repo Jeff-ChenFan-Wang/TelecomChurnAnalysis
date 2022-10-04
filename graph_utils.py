@@ -52,5 +52,5 @@ def graph_elbow(loss:pd.Series)->int:
     elbow = get_second_deriv(loss).argmax()+loss.index.min()
     ax.axvline(elbow,0,ax.get_ylim()[1],color='red',**{'alpha':0.5})
     ax.set_xlabel('Parameter')
-    ax.set_title(f'Optimal Cluster {elbow}')
+    ax.set_title(f'Optimal # of Clusters: {elbow}')
     return elbow

@@ -56,21 +56,27 @@ class CustomFeatureUnion(FeatureUnion):
             np.ndarray: feature names in array like form
         """
         if self.__sklearn_is_fitted__():
-            return np.hstack([
+            col_list = np.hstack([
                 self.num_cols,
                 self.bin_cols,
                 (
                     dict(self.transformer_list)['cat']
                     .named_steps['ohe'].get_feature_names_out(self.cat_cols)
-                ),
-                self.engin_cols
+                )
             ])
+            
+            if self.engin_cols is not None:
+                col_list = np.hstack([col_list,self.engin_cols])
+            
+            return col_list
 
 class PipelineFactory:
     """Factory class for creating sklearn preprocessing pipelines with a 
     working get_feature_names_out() method since as of v1.1.2 it is still
     broken
     """
+    #list all engineered feature names here
+    ENGINEERED_FEAT_NAMES = ['internetServicesSubbed']
     
     def __init__(self, raw_data:pd.DataFrame):
         """initilizes the factory by determining which columns are categorical
@@ -102,13 +108,18 @@ class PipelineFactory:
         """
         return np.in1d(self.original_cols,columns).nonzero()[0]
             
-    def create_pipe(self, *, normalize:bool,
-            intrnt_sub_list:List[str])->CustomFeatureUnion:
+    def create_pipe(self, intrnt_sub_list:List[str], *, 
+                    engineer:bool, random_seed:int, normalize:bool
+            )->CustomFeatureUnion:
         """creates a feature union of pipelines 
                 
         Args:
+            engineer (bool): whether to feature engineer additional columns
+            random_seed (int): integer for seeding KMeans 
             normalize (bool): Whether to normalize numerical features
-
+            intrnt_sub_list (List[str]): list of columns to engineer the 
+                "number of internet services subbed" column
+                
         Returns:
             Pipeline: sklearn preprocessing pipeline 
         """
@@ -117,22 +128,29 @@ class PipelineFactory:
         cat_pipe = self._make_cat_pipe()
         num_intrnt_serv_pipe = self._make_bool_count_pipe(intrnt_sub_list)
         
-        combine = CustomFeatureUnion([
+        pipe_list = [
             ('num',num_pipe),
             ('bin',bin_pipe),
             ('cat',cat_pipe),
-            ('num_intrnt',num_intrnt_serv_pipe)
-        ])
+        ]
         
-        engineered_feats = ['internetServicesSubbed']
-        
-        combine._set_feature_names(
+        if engineer:
+            kmeans_pipe = self._make_kmeans_pipe(
+                pipe_list=pipe_list, random_seed=random_seed)
+            
+            pipe_list.append(('num_intrnt',num_intrnt_serv_pipe))
+            engin_cols = self.ENGINEERED_FEAT_NAMES
+        else:
+            engin_cols = None
+
+        combined = CustomFeatureUnion(pipe_list)
+        combined._set_feature_names(
             self.num_cols,
             self.bin_cols,
             self.cat_cols,
+            engin_cols
         )
-        
-        return combine
+        return combined
     
     def _make_numerical_pipe(self, normalize:bool)->Pipeline:
         """make a sklearn pipeline for numerical features
@@ -221,6 +239,10 @@ class PipelineFactory:
             ),
         ])
         return count_pipe
+    
+    def _make_kmeans_pipe(self, random_seed:int)->Pipeline:
+        
+        return
 
 def to_binary(data:np.ndarray[bool])->np.ndarray[int]:
     """Utility function to convert booleans to integers since certain
