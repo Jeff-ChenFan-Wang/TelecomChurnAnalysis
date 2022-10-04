@@ -78,6 +78,8 @@ class PipelineFactory:
     """
     #list all engineered feature names here
     N_CLUSTERS = 8 #Optimal KMeans cluster found during EDA
+    
+    #List of engineered feature names
     ENGINEERED_FEAT_NAMES = np.hstack([
         ['internetServicesSubbed'],
         [f'KMeansCluster{i}' for i in range(N_CLUSTERS)]
@@ -113,7 +115,7 @@ class PipelineFactory:
         """
         return np.in1d(self.original_cols,columns).nonzero()[0]
             
-    def create_pipe(self, intrnt_sub_list:List[str]=None, *, 
+    def create_pipe(self, counted_services:List[str]=None, *, 
                     engineer:bool, random_seed:int, normalize:bool
             )->CustomFeatureUnion:
         """creates a feature union of pipelines 
@@ -122,7 +124,7 @@ class PipelineFactory:
             engineer (bool): whether to feature engineer additional columns
             random_seed (int): integer for seeding KMeans 
             normalize (bool): Whether to normalize numerical features
-            intrnt_sub_list (List[str]): list of columns to engineer the 
+            counted_services (List[str]): list of columns to engineer the 
                 "number of internet services subbed" column
                 
         Returns:
@@ -131,7 +133,7 @@ class PipelineFactory:
         num_pipe = self._make_numerical_pipe(normalize)
         bin_pipe = self._make_bin_pipe()
         cat_pipe = self._make_cat_pipe()
-        num_intrnt_serv_pipe = self._make_bool_count_pipe(intrnt_sub_list)
+        num_intrnt_serv_pipe = self._make_bool_count_pipe(counted_services)
         
         pipe_list = [
             ('num',num_pipe),
@@ -251,6 +253,15 @@ class PipelineFactory:
     
     def _make_kmeans_pipe(self, original_transformers:FeatureUnion,
                           random_seed:int)->Pipeline:
+        """Create a pipeline that creats
+
+        Args:
+            original_transformers (FeatureUnion): _description_
+            random_seed (int): _description_
+
+        Returns:
+            Pipeline: _description_
+        """
         kmeans_pipe = Pipeline([
             ('original_transformers', original_transformers),
             ('kmeans',MiniBatchKMeans(n_clusters=self.N_CLUSTERS,
