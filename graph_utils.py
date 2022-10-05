@@ -1,8 +1,12 @@
+from git import Object
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from typing import List, Tuple
+import pickle
+
+from sklearn.model_selection import GridSearchCV
 
 def get_subplot_dim(num:int)->Tuple[int,int]:
     """returns row and column dimensions closest to a square
@@ -55,15 +59,15 @@ def graph_elbow(loss:pd.Series)->int:
     ax.set_title(f'Optimal # of Clusters: {elbow}')
     return elbow
 
-def graph_cv_results(cv_results:dict[np.ndarray],x:str,hue:str)->None:
+def graph_cv_results(grid_cv:GridSearchCV,x:str,hue:str)->None:
     
-    cvDat = pd.DataFrame(cv_results)
+    cvDat = pd.DataFrame(grid_cv.cv_results_)
     cv_tst_score_cols = cvDat.columns[
         cvDat.columns.str.contains('split[0-9]_test_score',regex=True)
     ]
     
     fig, ax = plt.subplots(figsize=(8,8))
-    sns.lineplot(
+    ax = sns.lineplot(
         data=cvDat[[x,hue]].join(
             cvDat.apply(
                 lambda row: row[cv_tst_score_cols].to_numpy(),
@@ -72,5 +76,17 @@ def graph_cv_results(cv_results:dict[np.ndarray],x:str,hue:str)->None:
         ).explode('test_score'),
         x=x,y='test_score',hue=hue,ax=ax
     )
+    ax.set_title(
+        grid_cv.best_params_
+    )
 
     return
+
+def pickle_model(model:Object,file_path:str):
+    with open(file_path, 'wb') as handle:
+        pickle.dump(model, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        
+def load_pickle_model(file_path:str)->Object:
+    with open(file_path, 'rb') as handle:
+        model = pickle.load(handle)
+        return model
