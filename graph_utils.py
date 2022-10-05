@@ -54,3 +54,23 @@ def graph_elbow(loss:pd.Series)->int:
     ax.set_xlabel('Parameter')
     ax.set_title(f'Optimal # of Clusters: {elbow}')
     return elbow
+
+def graph_cv_results(cv_results:dict[np.ndarray],x:str,hue:str)->None:
+    
+    cvDat = pd.DataFrame(cv_results)
+    cv_tst_score_cols = cvDat.columns[
+        cvDat.columns.str.contains('split[0-9]_test_score',regex=True)
+    ]
+    
+    fig, ax = plt.subplots(figsize=(8,8))
+    sns.lineplot(
+        data=cvDat[[x,hue]].join(
+            cvDat.apply(
+                lambda row: row[cv_tst_score_cols].to_numpy(),
+                axis=1
+            ).rename('test_score')
+        ).explode('test_score'),
+        x=x,y='test_score',hue=hue,ax=ax
+    )
+
+    return
