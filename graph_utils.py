@@ -64,7 +64,13 @@ def graph_elbow(loss:pd.Series)->int:
     return elbow
 
 def graph_cv_results(grid_cv:GridSearchCV,x:str,hue:str)->None:
-    
+    """graphs the cross validation results
+
+    Args:
+        grid_cv (GridSearchCV): trained sklearn gridsearch object
+        x (str): hyperparameter name you want for x axis
+        hue (str): another hyperparameter name you want to compare 
+    """
     cvDat = pd.DataFrame(grid_cv.cv_results_)
     cv_tst_score_cols = cvDat.columns[
         cvDat.columns.str.contains('split[0-9]_test_score',regex=True)
@@ -88,8 +94,16 @@ def graph_cv_results(grid_cv:GridSearchCV,x:str,hue:str)->None:
 
 def graph_estimator_auc(
         estimators:List[BaseEstimator], data_ls:List[np.ndarray],
-        y_test:np.ndarray,figsize:Tuple[int,int]=(12,8))->None:
-    
+        y_test:np.ndarray[int],figsize:Tuple[int,int]=(12,8))->None:
+    """Graphs the ROC curve of multiple estimators at once in a single plot
+    and shows the AUC value
+
+    Args:
+        estimators (List[BaseEstimator]): list of trained sklearn estimators
+        data_ls (List[np.ndarray]): list of test data for each estimator
+        y_test (np.ndarray[int]): true labels for test set
+        figsize (Tuple[int,int], optional): Figure size. Defaults to (12,8).
+    """
     r,c = get_subplot_dim(len(estimators))
     fig, ax = plt.subplots(r,c,figsize=figsize)
     for estim, dat, subplot in zip(estimators,data_ls,ax.flatten()):
@@ -103,8 +117,16 @@ def graph_estimator_auc(
     
 def graph_estimator_cmat(
         estimators:List[BaseEstimator], data_ls:List[np.ndarray],
-        y_test:np.ndarray,figsize:Tuple[int,int]=(12,8))->None:
-    
+        y_test:np.ndarray[int],figsize:Tuple[int,int]=(12,8))->None:
+    """Graphs the confusion matrix of multiple estimators at once in a 
+    single plot
+
+    Args:
+        estimators (List[BaseEstimator]): list of trained sklearn estimators 
+        data_ls (List[np.ndarray]): list of test data for each estimator
+        y_test (np.ndarray[int]): true labels for test set
+        figsize (Tuple[int,int], optional): Figure size. Defaults to (12,8).
+    """
     r,c = get_subplot_dim(len(estimators))
     fig, ax = plt.subplots(r,c,figsize=figsize)
     for estim, dat, subplot in zip(estimators,data_ls,ax.flatten()):
@@ -117,12 +139,47 @@ def graph_estimator_cmat(
     
 def graph_feat_importance(
         feat_imps:List[np.ndarray],feat_names:List[str])->None:
+    """graphs the top 10 most important features for each estimator
+
+    Args:
+        feat_imps (List[np.ndarray]): feature importances of estimator
+        feat_names (List[str]): feature names
+    """
     plt.figure(figsize=(7,6))
     named_imps = pd.Series(
         feat_imps,index=feat_names
     ).sort_values(ascending=False).head(10)
     ax = sns.barplot(x=named_imps,y=named_imps.index)
     ax.set_title('Top 10 Most Important Features')
+    
+def graph_lift(
+        estimator:BaseEstimator, y_test:np.ndarray[int],
+        x_test:np.ndarray[np.number],figsize:Tuple[int,int]=(7,6))->None:
+    """Graphs the lift of the estimator
+
+    Args:
+        estimator (BaseEstimator): trained sklearn estimator
+        y_test (np.ndarray[int]): true labels for test set
+        x_test (np.ndarray[np.number]): test set features
+        figsize (Tuple[int,int], optional): Figure size. Defaults to (12,8).
+    """
+    ranked_probs = pd.DataFrame(
+        {'label':y_test,'prob':estimator.predict_proba(x_test)[:,1]}
+    ).sort_values('prob',ascending=False)
+    ranked_probs['decile'] = np.digitize(
+        ranked_probs['prob'],
+        np.percentile(ranked_probs['prob'],range(100,-1,-10)),
+        right=False
+    )
+    ranked_probs['decile'] = ranked_probs['decile'].replace(0,1)
+    gain = ranked_probs.groupby('decile')['label'].sum().sort_index().cumsum()
+    lift = gain/(gain.index*10)
+    plt.figure(figsize=figsize)
+    ax = sns.barplot(x=lift.index,y=lift)
+    ax.set_title(f'Lift Chart for {estimator.__class__.__name__}')
+    ax.set_ylabel('Lift')
+    for i in ax.containers:
+        ax.bar_label(i,)
 
 def pickle_model(model:Object,file_path:str)->None:
     with open(file_path, 'wb') as handle:
