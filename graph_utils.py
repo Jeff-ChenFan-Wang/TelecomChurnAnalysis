@@ -1,3 +1,4 @@
+from lib2to3.pytree import Base
 from git import Object
 import pandas as pd
 import numpy as np
@@ -5,7 +6,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from typing import List, Tuple
 import pickle
-
+from sklearn.base import BaseEstimator
+from sklearn.metrics import (
+    RocCurveDisplay, roc_auc_score, ConfusionMatrixDisplay
+)
 from sklearn.model_selection import GridSearchCV
 
 def get_subplot_dim(num:int)->Tuple[int,int]:
@@ -82,7 +86,45 @@ def graph_cv_results(grid_cv:GridSearchCV,x:str,hue:str)->None:
 
     return
 
-def pickle_model(model:Object,file_path:str):
+def graph_estimator_auc(
+        estimators:List[BaseEstimator], data_ls:List[np.ndarray],
+        y_test:np.ndarray,figsize:Tuple[int,int]=(12,8))->None:
+    
+    r,c = get_subplot_dim(len(estimators))
+    fig, ax = plt.subplots(r,c,figsize=figsize)
+    for estim, dat, subplot in zip(estimators,data_ls,ax.flatten()):
+        RocCurveDisplay.from_estimator(
+            estim,dat,y_test,ax=subplot)
+        score = str(roc_auc_score(y_test,estim.predict_proba(dat)[:,1]))[:7]
+        subplot.set_title(
+            f'{estim.__class__.__name__} AUC: {score}'
+        )
+    plt.tight_layout()
+    
+def graph_estimator_cmat(
+        estimators:List[BaseEstimator], data_ls:List[np.ndarray],
+        y_test:np.ndarray,figsize:Tuple[int,int]=(12,8))->None:
+    
+    r,c = get_subplot_dim(len(estimators))
+    fig, ax = plt.subplots(r,c,figsize=figsize)
+    for estim, dat, subplot in zip(estimators,data_ls,ax.flatten()):
+        ConfusionMatrixDisplay.from_estimator(
+            estim,dat,y_test,ax=subplot,cmap='bone')
+        subplot.set_title(
+            f'{estim.__class__.__name__}'
+        )
+    plt.tight_layout()
+    
+def graph_feat_importance(
+        feat_imps:List[np.ndarray],feat_names:List[str])->None:
+    plt.figure(figsize=(7,6))
+    named_imps = pd.Series(
+        feat_imps,index=feat_names
+    ).sort_values(ascending=False).head(10)
+    ax = sns.barplot(x=named_imps,y=named_imps.index)
+    ax.set_title('Top 10 Most Important Features')
+
+def pickle_model(model:Object,file_path:str)->None:
     with open(file_path, 'wb') as handle:
         pickle.dump(model, handle, protocol=pickle.HIGHEST_PROTOCOL)
         
