@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+import uvicorn
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -16,3 +17,20 @@ async def root(request: Request) -> dict:
         "index.html",
         {"request": request},
     )
+    
+@app.get("/eda")
+async def root(request: Request) -> dict:
+    return TEMPLATES.TemplateResponse(
+        "EDA.html",
+        {"request": request},
+    )
+    
+@app.get("/model")
+async def root(request: Request) -> dict:
+    return TEMPLATES.TemplateResponse(
+        "model.html",
+        {"request": request},
+    )
+
+if __name__ == '__main__':
+    uvicorn.run(app, host='127.0.0.1', port=8000)
