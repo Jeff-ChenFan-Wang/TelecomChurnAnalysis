@@ -14631,7 +14631,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
 <h1 id="Table-of-contents">Table of contents<a class="anchor-link" href="#Table-of-contents">&#182;</a></h1><ul>
-<li><a href="#eda">Exploratory Data Analysis</a></li>
+<li><a href="#eda">Data Description and Load In</a></li>
 <li><a href="#univariate">Univariate Analysis</a></li>
 <li><a href="#multivariate">Multivariate Analysis</a></li>
 <li><a href="#feature-engineering">Feature Engineering</a></li>
@@ -14647,7 +14647,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h1 id="EDA"><a name="eda">EDA</a><a class="anchor-link" href="#EDA">&#182;</a></h1>
+<h1 id="Data-Description-and-Load-In"><a name="eda">Data Description and Load In</a><a class="anchor-link" href="#Data-Description-and-Load-In">&#182;</a></h1>
 </div>
 </div>
 </div>
@@ -15056,7 +15056,18 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h1 id="Target-Churn">Target Churn<a class="anchor-link" href="#Target-Churn">&#182;</a></h1>
+<h1 id="Univariate-Analysis"><a name="univariate">Univariate Analysis</a><a class="anchor-link" href="#Univariate-Analysis">&#182;</a></h1>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<h3 id="Target-Churn">Target Churn<a class="anchor-link" href="#Target-Churn">&#182;</a></h3>
 </div>
 </div>
 </div>
@@ -15094,14 +15105,14 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputArea-child">
     
-    <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[&nbsp;]:</div>
+    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
 
 
 
-<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<div class="jp-RenderedText jp-OutputArea-output " data-mime-type="text/plain">
 <pre>&lt;AxesSubplot: ylabel=&#39;Churn&#39;&gt;</pre>
 </div>
 
@@ -15116,7 +15127,6 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-RenderedImage jp-OutputArea-output ">
 <img src="data:image/png;base64,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"
 class="
-jp-needs-light-background
 "
 >
 </div>
@@ -15127,17 +15137,6 @@ jp-needs-light-background
 
 </div>
 
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
-<div class="jp-Cell-inputWrapper">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h1 id="Univariate-Analysis"><a name="univariate">Univariate Analysis</a><a class="anchor-link" href="#Univariate-Analysis">&#182;</a></h1>
-</div>
-</div>
-</div>
 </div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
 <div class="jp-Cell-inputWrapper">
