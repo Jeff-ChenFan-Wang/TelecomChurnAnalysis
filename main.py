@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Form
 import uvicorn
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -13,10 +13,20 @@ TEMPLATES = Jinja2Templates(directory=str(BASE_PATH / "dashboard"))
 
 @app.get("/")
 async def root(request: Request) -> dict:
+    result = 0
     return TEMPLATES.TemplateResponse(
         "index.html",
-        {"request": request},
+        {"request": request,'result': result},
     )
+
+@app.post("/")
+def form_post(request: Request, num: int = Form(...)):
+    result = str(num)
+    return TEMPLATES.TemplateResponse(
+        'index.html', 
+        context={'request': request, 'result': result}
+    )
+
     
 @app.get("/eda")
 async def root(request: Request) -> dict:

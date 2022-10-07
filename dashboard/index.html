@@ -1,15 +1,61 @@
 <html>
 	<head><title>Telecom Churn Prediction</title>
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="msapplication-tap-highlight" content="no">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
 	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js" 
+    integrity="sha512-aVKKRRi/Q/YV+4mjoKBsE4x3H+BkegoM/em46NNlCqNTmUYADjBbeNefNxYV7giUp0VxICtqdrbqU7iVaeZNXA=="
+     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 	</head>
-	<body>
+    <body>
+        <style>
+            body{
+                font-family: 'Poppins', sans-serif;
+            }
+            h4{
+                font-weight: 600;
+            }
+		</style>
+        <form method="post">
+            <div class="input-field col s12">
+                <select name='membership' id="membership" required>
+                    <option value="" disabled selected>Choose your Type</option>
+                    <option value="0">No Membership</option>
+                    <option value="1">Basic Membership</option>
+                    <option value="2">Silver Membership</option>
+                    <option value="3">Gold Membership</option>
+                    <option value="4">Platinum Membership</option>
+                    <option value="5">Premium Membership</option>
+                </select name='model'>
+                <label>Membership Category</label>
+            </div>
+            <div>
+                <input type="submit">
+            </div>
+        </form>
+
+        <p>Result: {{ result }}</p>
+        <p> HI</p>
+        <style>
+            .input-field label {
+             color: #6698e3;
+           }
+           .input-field input[type=text]:focus + label {
+             color: #6698e3;
+           }
+           .input-field input[type=text]:focus {
+             border-bottom: 1px solid #6698e3;
+             box-shadow: 0 1px 0 0 #6698e3;
+           }
+           .input-field .prefix.active {
+             color: #6698e3;
+           }
+         </style>
+    </body>
+</html>
+	<!-- <body>
 		<style>
             body{
                 font-family: 'Poppins', sans-serif;
@@ -104,4 +150,4 @@
             })
         </script>
 	</body>
-</html>
+</html> -->
