@@ -14464,10 +14464,6 @@ a.anchor-link {
   display: none;
 }
 
-.highlight  {
-  margin: 0.4em;
-}
-
 /* Input area styling */
 .jp-InputArea {
   overflow: hidden;
@@ -14477,9 +14473,26 @@ a.anchor-link {
   overflow: hidden;
 }
 
-.CodeMirror pre {
+.CodeMirror.cm-s-jupyter .highlight pre {
+/* weird, but --jp-code-padding defined to be 5px but 4px horizontal padding is hardcoded for pre.CodeMirror-line */
+  padding: var(--jp-code-padding) 4px;
   margin: 0;
-  padding: 0;
+
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+
+}
+
+.jp-OutputArea-output pre {
+  line-height: inherit;
+  font-family: inherit;
+}
+
+.jp-RenderedText pre {
+  color: var(--jp-content-font-color1);
+  font-size: var(--jp-code-font-size);
 }
 
 /* Using table instead of flexbox so that we can use break-inside property */
@@ -14559,12 +14572,12 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
                 },
                 displayAlign: 'center',
                 CommonHTML: {
-                    linebreaks: { 
-                    automatic: true 
+                    linebreaks: {
+                    automatic: true
                     }
                 }
             });
-        
+
             MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
         }
     }
@@ -14639,10 +14652,25 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h1 id="Table-of-contents">Table of contents<a class="anchor-link" href="#Table-of-contents">&#182;</a></h1><ol>
+<h1 id="Table-of-contents">Table of contents<a class="anchor-link" href="#Table-of-contents">&#182;</a></h1><ul>
 <li><a href="#Preprocessing">Preprocessing</a></li>
 <li><a href="#Pipelines">Pipelines</a></li>
-</ol>
+<li><a href="#models">Model Training</a><ul>
+<li><a href="#log">Logistic Regression</a></li>
+<li><a href="#knn">K Nearest Neighbors</a></li>
+<li><a href="#rfc">Random Forest</a></li>
+<li><a href="#xgb">XGBoost</a></li>
+<li><a href="#lgbm">LightGBM</a></li>
+</ul>
+</li>
+<li><a href="#analysis1">Model Analysis</a><ul>
+<li><a href="#compare">Model Comparisons</a></li>
+<li><a href="#featImp">Examining Feature Importance</a></li>
+</ul>
+</li>
+<li><a href="#stackClf">Stacking Classifier</a></li>
+<li><a href="#business">For Business Stakeholders</a></li>
+</ul>
 
 </div>
 </div>
@@ -14654,7 +14682,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h1 id="Preprocessing-">Preprocessing <a name="Preprocessing" /><a class="anchor-link" href="#Preprocessing-">&#182;</a></h1>
+<h1 id="Preprocessing"><a name="Preprocessing">Preprocessing</a><a class="anchor-link" href="#Preprocessing">&#182;</a></h1>
 </div>
 </div>
 </div>
@@ -14763,16 +14791,16 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <p>For each model, the training process will be as follows:</p>
 <ol>
 <li>Determine basic parameters</li>
-<li>Conduct 5-Stratified-Folds to tune our hyperparameters <ul>
+<li>Conduct 5-Stratified-Folds to tune our hyperparameters<ul>
 <li>80% training, 20% validation</li>
 <li>folds ensure same number of target class</li>
 </ul>
 </li>
 <li>Pick the best model through highest mean AUROC of all folds<ul>
-<li>A solid argument can be made for optimizing hyperparameters using F1 scores or Average precision from PRAUC instead, due to the imbalanced target class and slightly higher importance of positive classes. </li>
-<li>However, the negative classes are still very important due to the fact that offering anti-churn promotions to customers who would have stayed also means lost profits. </li>
-<li>Furthermore, a 3:1 imbalance ratio is actually relatively tame, and would already be well compensated for by weighting the loss function in the algorithms which we will do. </li>
-<li>Lastly, we do not know the cost tradeoff necessary for counter-churn measures it would be better of to use a curve so we can change the decision threshold later on as the stakeholders see fit. </li>
+<li>A solid argument can be made for optimizing hyperparameters using F1 scores or Average precision from PRAUC instead, due to the imbalanced target class and slightly higher importance of positive classes.</li>
+<li>However, the negative classes are still very important due to the fact that offering anti-churn promotions to customers who would have stayed also means lost profits.</li>
+<li>Furthermore, a 3:1 imbalance ratio is actually relatively tame, and would already be well compensated for by weighting the loss function in the algorithms which we will do.</li>
+<li>Lastly, we do not know the cost tradeoff necessary for counter-churn measures it would be better of to use a curve so we can change the decision threshold later on as the stakeholders see fit.</li>
 </ul>
 </li>
 </ol>
@@ -14886,7 +14914,18 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h1 id="Logistic-Regression">Logistic Regression<a class="anchor-link" href="#Logistic-Regression">&#182;</a></h1>
+<h1 id="Model-Training"><a name="models">Model Training</a><a class="anchor-link" href="#Model-Training">&#182;</a></h1>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<h2 id="Logistic-Regression"><a name="log">Logistic Regression</a><a class="anchor-link" href="#Logistic-Regression">&#182;</a></h2>
 </div>
 </div>
 </div>
@@ -15007,9 +15046,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-
 <div class="jp-OutputArea-child">
-
     
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
@@ -15053,7 +15090,7 @@ jp-needs-light-background
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h1 id="K-Nearest-Neighbors">K Nearest Neighbors<a class="anchor-link" href="#K-Nearest-Neighbors">&#182;</a></h1>
+<h2 id="K-Nearest-Neighbors"><a name="knn">K Nearest Neighbors</a><a class="anchor-link" href="#K-Nearest-Neighbors">&#182;</a></h2>
 </div>
 </div>
 </div>
@@ -15146,9 +15183,7 @@ jp-needs-light-background
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-
 <div class="jp-OutputArea-child">
-
     
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
@@ -15192,7 +15227,7 @@ jp-needs-light-background
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h1 id="Random-Forest-Classifier">Random Forest Classifier<a class="anchor-link" href="#Random-Forest-Classifier">&#182;</a></h1>
+<h2 id="Random-Forest"><a name="rfc">Random Forest</a><a class="anchor-link" href="#Random-Forest">&#182;</a></h2>
 </div>
 </div>
 </div>
@@ -15285,9 +15320,7 @@ jp-needs-light-background
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-
 <div class="jp-OutputArea-child">
-
     
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
@@ -15331,7 +15364,7 @@ jp-needs-light-background
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h1 id="XGBoost">XGBoost<a class="anchor-link" href="#XGBoost">&#182;</a></h1>
+<h2 id="XGBoost"><a name="xgb">XGBoost</a><a class="anchor-link" href="#XGBoost">&#182;</a></h2>
 </div>
 </div>
 </div>
@@ -15437,9 +15470,7 @@ jp-needs-light-background
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-
 <div class="jp-OutputArea-child">
-
     
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
@@ -15483,7 +15514,7 @@ jp-needs-light-background
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h1 id="LightGBM">LightGBM<a class="anchor-link" href="#LightGBM">&#182;</a></h1>
+<h2 id="LightGBM"><a name="lgbm">LightGBM</a><a class="anchor-link" href="#LightGBM">&#182;</a></h2>
 </div>
 </div>
 </div>
@@ -15583,9 +15614,7 @@ jp-needs-light-background
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-
 <div class="jp-OutputArea-child">
-
     
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
@@ -15629,7 +15658,18 @@ jp-needs-light-background
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h1 id="Model-Comparisons">Model Comparisons<a class="anchor-link" href="#Model-Comparisons">&#182;</a></h1>
+<h1 id="Model-Analysis"><a name="analysis1">Model Analysis</a><a class="anchor-link" href="#Model-Analysis">&#182;</a></h1>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<h2 id="Model-Comparisons"><a name="compare">Model Comparisons</a><a class="anchor-link" href="#Model-Comparisons">&#182;</a></h2>
 </div>
 </div>
 </div>
@@ -15691,9 +15731,7 @@ jp-needs-light-background
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-
 <div class="jp-OutputArea-child">
-
     
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
@@ -15721,7 +15759,7 @@ jp-needs-light-background
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h1 id="Examining-Feature-Importances">Examining Feature Importances<a class="anchor-link" href="#Examining-Feature-Importances">&#182;</a></h1>
+<h2 id="Examining-Feature-Importance"><a name="featImp">Examining Feature Importance</a><a class="anchor-link" href="#Examining-Feature-Importance">&#182;</a></h2>
 </div>
 </div>
 </div>
@@ -15775,9 +15813,7 @@ jp-needs-light-background
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-
 <div class="jp-OutputArea-child">
-
     
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
@@ -15832,9 +15868,7 @@ jp-needs-light-background
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-
 <div class="jp-OutputArea-child">
-
     
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
@@ -15862,7 +15896,7 @@ jp-needs-light-background
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h1 id="Stacking-Classifier">Stacking Classifier<a class="anchor-link" href="#Stacking-Classifier">&#182;</a></h1>
+<h1 id="Stacking-Classifier"><a name="stackClf">Stacking Classifier</a><a class="anchor-link" href="#Stacking-Classifier">&#182;</a></h1>
 </div>
 </div>
 </div>
@@ -16035,9 +16069,7 @@ jp-needs-light-background
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-
 <div class="jp-OutputArea-child">
-
     
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
@@ -16096,9 +16128,7 @@ jp-needs-light-background
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-
 <div class="jp-OutputArea-child">
-
     
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
@@ -16126,7 +16156,7 @@ jp-needs-light-background
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h1 id="Calculating-Lift-and-Gain-for-Business-Stakeholders">Calculating Lift and Gain for Business Stakeholders<a class="anchor-link" href="#Calculating-Lift-and-Gain-for-Business-Stakeholders">&#182;</a></h1>
+<h1 id="Calculating-Lift-for-Business-Stakeholders"><a name="business">Calculating Lift for Business Stakeholders</a><a class="anchor-link" href="#Calculating-Lift-for-Business-Stakeholders">&#182;</a></h1>
 </div>
 </div>
 </div>
@@ -16155,7 +16185,7 @@ jp-needs-light-background
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
 <p>To translate our model performance to something that business stakeholders would be able to understand, we created a lift chart below.</p>
 <ul>
-<li>If we use our model to pick customers that will churn, our model can correctly predict 10.1 times more customers that will churn compared to randomly picking 10% of the customers without the model. </li>
+<li>If we use our model to pick customers that will churn, our model can correctly predict 10.1 times more customers that will churn compared to randomly picking 10% of the customers without the model.</li>
 </ul>
 
 </div>
@@ -16183,9 +16213,7 @@ jp-needs-light-background
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-
 <div class="jp-OutputArea-child">
-
     
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
