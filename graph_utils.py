@@ -1,5 +1,4 @@
 from lib2to3.pytree import Base
-from git import Object
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -181,11 +180,11 @@ def graph_lift(
     for i in ax.containers:
         ax.bar_label(i,)
 
-def pickle_model(model:Object,file_path:str)->None:
+def pickle_model(model:object,file_path:str)->None:
     with open(file_path, 'wb') as handle:
         pickle.dump(model, handle, protocol=pickle.HIGHEST_PROTOCOL)
         
-def load_pickle_model(file_path:str)->Object:
+def load_pickle_model(file_path:str)->object:
     with open(file_path, 'rb') as handle:
         model = pickle.load(handle)
         return model
