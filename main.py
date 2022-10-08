@@ -5,14 +5,17 @@ import uvicorn
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
 import pandas as pd
+import json
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 
 app = FastAPI(title="TelecomChurn")
 
 BASE_PATH = Path(__file__).resolve().parent
 BEST_MODEL_PICKL_NAME = 'stack_clf'
 PIPE_NAME = 'data_pipeline'
-MODEL_PATH = BASE_PATH + 'Pickles/' + BEST_MODEL_PICKL_NAME
-PIPE_PATH = BASE_PATH + 'Pickles/' + PIPE_NAME
+MODEL_PATH = str(BASE_PATH / 'Pickles' / BEST_MODEL_PICKL_NAME)
+PIPE_PATH = str(BASE_PATH / 'Pickles' / PIPE_NAME)
 
 TEMPLATES = Jinja2Templates(directory=str(BASE_PATH / "dashboard"))
 
@@ -28,21 +31,25 @@ try:
 except EnvironmentError:
     print('cannot find pipe')
 
-@app.get("/")
-async def root(request: Request) -> dict:
-    result = 0
-    return TEMPLATES.TemplateResponse(
-        "index.html",
-        {"request": request,'result': result},
-    )
+# @app.get("/")
+# async def root(request: Request) -> dict:
+#     result = 0
+#     return TEMPLATES.TemplateResponse(
+#         "index.html",
+#         {"request": request,'result': result},
+#     )
 
-@app.post("/")
-async def predict(raw_json:Json):
-    raw_data = json.loads(raw_json)
-    raw_data = pd.read_json(raw_data)
-    clean_data = pipe.transform(raw_data)
-    probability = model.predict_proba(clean_data)
-    churn = model.predict(clean_data)
+@app.post("/predict")
+async def predict(raw_json: Request)->dict:
+    await print(raw_json.json())
+    # raw_data = json.loads(raw_json)
+    # raw_data = pd.read_json(raw_data)
+    # clean_data = pipe.transform(raw_data)
+    # probability = model.predict_proba(clean_data)
+    # churn_result = model.predict(clean_data)
+    #{'churn_result':churn_result,'probability':probability}
+    # encoded_result = jsonable_encoder({'hi':1,'bye':2})
+    return await raw_json.json()
 
 @app.get("/eda")
 async def root(request: Request) -> dict:

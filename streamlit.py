@@ -9,6 +9,7 @@ st.title('Telecom churn')
 # FastAPI endpoint
 endpoint = 'http://localhost:8000/predict'
 
+
 st.subheader('View Sample of Test Set')
 st.write('Test 1')
 gender = st.selectbox('Gender:', ['Male','Female'])
@@ -34,7 +35,30 @@ streamingTv = st.radio('Subscribed to Streaming TV',('True','False'))
 streamingMovies = st.radio('Subscribed to Streaming Movies',('True','False'))
 paperlessBilling = st.radio('Subscribed to Paperless Biling',('True','False'))
 
+feature_names = ['gender', 'tenure', 'InternetService', 'Contract', 'PaymentMethod',
+       'MonthlyCharges', 'TotalCharges', 'SeniorCitizen', 'Partner',
+       'Dependents', 'PhoneService', 'MultipleLines', 'OnlineSecurity',
+       'OnlineBackup', 'DeviceProtection', 'TechSupport', 'StreamingTV',
+       'StreamingMovies', 'PaperlessBilling']
+var_names = [gender,tenure,internetService,contract,paymentMethod,
+             monthlyCharges,totalCharges,seniorCitizen,partner,dependents,
+             phoneService,multipleLines,onlineSecurity,onlineBackup,
+             deviceProtection,techSupport,streamingTv,streamingMovies,
+             paperlessBilling]
+
 if st.button('Start Prediction'):
     with st.spinner('Prediction in Progress. Please Wait...'):
-        output = requests.post(endpoint, raw_data=, timeout=8000)
+        out_json = dict(zip(feature_names,var_names))
+        
+        output = requests.post(
+            endpoint, 
+            json=out_json
+        )
+        
+        
+        print(output.json(),type(output))
+        churn_result = output
+        churn_prob = output
+        st.write(output.json())
+        st.write(churn_prob)
 
