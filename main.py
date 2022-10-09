@@ -1,5 +1,5 @@
 import pickle
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from pydantic import Json
 import uvicorn
 from fastapi.templating import Jinja2Templates
@@ -8,6 +8,8 @@ import pandas as pd
 import json
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
+
+from predict_results import PredictResults
 
 app = FastAPI(title="TelecomChurn")
 
@@ -24,32 +26,27 @@ try:
         model = pickle.load(handle)
 except EnvironmentError:
     print('cannot find model')
-
+    
 try:
     with open(PIPE_PATH, 'rb') as handle:
         pipe = pickle.load(handle)
 except EnvironmentError:
     print('cannot find pipe')
 
-# @app.get("/")
-# async def root(request: Request) -> dict:
-#     result = 0
-#     return TEMPLATES.TemplateResponse(
-#         "index.html",
-#         {"request": request,'result': result},
-#     )
-
 @app.post("/predict")
-async def predict(raw_json: Request)->dict:
-    await print(raw_json.json())
-    # raw_data = json.loads(raw_json)
-    # raw_data = pd.read_json(raw_data)
-    # clean_data = pipe.transform(raw_data)
-    # probability = model.predict_proba(clean_data)
-    # churn_result = model.predict(clean_data)
-    #{'churn_result':churn_result,'probability':probability}
-    # encoded_result = jsonable_encoder({'hi':1,'bye':2})
-    return await raw_json.json()
+async def predict(raw_json: dict)->dict:
+    raw_data = pd.DataFrame.from_dict(raw_json)
+    clean_data = pipe.transform(raw_data)
+    churn_result = model.predict(clean_data)[0]
+    churn_prob = model.predict_proba(clean_data)[0][1]
+    
+    churn_result_model = PredictResults(
+        churn_result=churn_result,
+        churn_probability=churn_prob
+        )
+    
+    encoded_result = jsonable_encoder(churn_result_model)
+    return JSONResponse(content=encoded_result)
 
 @app.get("/eda")
 async def root(request: Request) -> dict:

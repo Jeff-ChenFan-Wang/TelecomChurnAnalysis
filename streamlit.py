@@ -1,8 +1,6 @@
 import streamlit as st
 import requests
-import pandas as pd
-import io
-import json
+
 
 st.title('Telecom churn')
 
@@ -10,8 +8,7 @@ st.title('Telecom churn')
 endpoint = 'http://localhost:8000/predict'
 
 
-st.subheader('View Sample of Test Set')
-st.write('Test 1')
+st.subheader('Insert Customer Information to Find Out How Likely They Will Churn')
 gender = st.selectbox('Gender:', ['Male','Female'])
 contract = st.selectbox('Contract Type:', ['Month-to-Month','One year','Two year'])
 internetService = st.selectbox('Internet Service', ['DSL, Fiber optic, No'])
@@ -40,25 +37,24 @@ feature_names = ['gender', 'tenure', 'InternetService', 'Contract', 'PaymentMeth
        'Dependents', 'PhoneService', 'MultipleLines', 'OnlineSecurity',
        'OnlineBackup', 'DeviceProtection', 'TechSupport', 'StreamingTV',
        'StreamingMovies', 'PaperlessBilling']
-var_names = [gender,tenure,internetService,contract,paymentMethod,
-             monthlyCharges,totalCharges,seniorCitizen,partner,dependents,
-             phoneService,multipleLines,onlineSecurity,onlineBackup,
-             deviceProtection,techSupport,streamingTv,streamingMovies,
-             paperlessBilling]
+var_names = [[gender],[tenure],[internetService],[contract],[paymentMethod],
+             [monthlyCharges],[totalCharges],[bool(seniorCitizen)],
+             [bool(partner)],[bool(dependents)],[bool(phoneService)],
+             [bool(multipleLines)],[bool(onlineSecurity)],[bool(onlineBackup)],
+             [bool(deviceProtection)],[bool(techSupport)],[bool(streamingTv)],
+             [bool(streamingMovies)],[bool(paperlessBilling)]]
 
 if st.button('Start Prediction'):
     with st.spinner('Prediction in Progress. Please Wait...'):
         out_json = dict(zip(feature_names,var_names))
         
         output = requests.post(
-            endpoint, 
+            url=endpoint, 
             json=out_json
         )
         
-        
-        print(output.json(),type(output))
-        churn_result = output
-        churn_prob = output
-        st.write(output.json())
+        churn_result = output.json()['churn_result']
+        churn_prob = output.json()['churn_result']
+        st.write(churn_result)
         st.write(churn_prob)
 
