@@ -5,7 +5,7 @@ import requests
 st.title('Telecom Churn Prediction')
 
 # FastAPI endpoint
-endpoint = 'http://localhost:8000/predict'
+endpoint = 'http://fastapi:8000/predict'
 
 with st.container():
     st.subheader('Fill out customer information to find out how likely they will churn:')
