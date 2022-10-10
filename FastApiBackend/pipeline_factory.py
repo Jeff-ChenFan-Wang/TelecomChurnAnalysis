@@ -1,15 +1,12 @@
-from ctypes import ArgumentError
 import pandas as pd
 import numpy as np
-from sklearn.pipeline import NotFittedError, Pipeline, FeatureUnion, TransformerMixin
+from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.preprocessing import (
     StandardScaler, 
     OneHotEncoder,
     FunctionTransformer
 )
 from sklearn.compose import ColumnTransformer
-from sklearn.decomposition import PCA
-from sklearn.impute import SimpleImputer
 from typing import List    
 from sklearn.base import BaseEstimator
 from sklearn.cluster import MiniBatchKMeans
