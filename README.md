@@ -25,18 +25,19 @@ Project Pipeline:
 
 Python Version: 3.10 <br>
 Packages: `Scikit-Learn, XGBoost, LightGBM, Pandas, Numpy, FastAPI, Streamlit, Docker` <br>
-Cloud Services: `Heroku, AWS Fargate, AWS ECR`<br>
+Cloud Services: `Heroku, AWS Fargate, AWS ECR`<br><br>
+**Techstack Setup**
  - Model is trained on local machine with the final classifier and data processing pipeline exported as pickle files
  - FastAPI loads pickle files and exposes an endpoint for prediction
  - FastAPI is built into a Docker image
  - FastAPI Docker image is pushed to AWS ECR
- - FastAPI Docker container is run on AWS Fargate cluster by ECS
+ - FastAPI Docker container is deployed on AWS Fargate cluster by ECS
  - Streamlit frontend is deployed on Heroku directly
 
-I'll be the first to admit this techstack is a little overengineered since I wanted practice with tools such as Docker and FastAPI (later once the AWS bill starts ramping up I may simplify it down to the barebones).<br>
+I'll admit this techstack is a little overengineered since I wanted practice with tools such as Docker and FastAPI (later once the AWS bill starts ramping up I may simplify it down to the barebones).<br>
 
 ## Model Results for Business Stakeholders
-Most of the time metrics such as AUROC, F1-Scores, Average Precision etc. are too complicated to explain to other department heads within the company as they require a degree of statistical background. Hence most business stakeholders prefer to use metrics such as lift which we see below:<br>
+Most of the time metrics such as AUROC, F1-Scores, Average Precision etc. are too complicated to explain to other department personnel within the company without a degree of statistical background. Hence most business stakeholders prefer to use metrics such as gain and lift which we see below:<br>
 <img src = "readmeImgs/gainChart.png" width = 350><br>
  - The gain chart indicates the percentage of customers that will churn correctly identified by the model at each decile of customers. 
     - This gain chart therefore indicates that by just offering 20% of all our customers a special promotion for staying, we may be able to reduce churn rates by nearly 50%. <br>
