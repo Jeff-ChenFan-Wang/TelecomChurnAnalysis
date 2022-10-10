@@ -1,14 +1,11 @@
 import pickle
-from fastapi import Depends, FastAPI, Request
-from pydantic import Json
+from fastapi import FastAPI, Request
 import uvicorn
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
 import pandas as pd
-import json
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-
 from predict_results import PredictResults
 
 app = FastAPI(title="TelecomChurn")
@@ -16,8 +13,8 @@ app = FastAPI(title="TelecomChurn")
 BASE_PATH = Path(__file__).resolve().parent
 BEST_MODEL_PICKL_NAME = 'stack_clf'
 PIPE_NAME = 'data_pipeline'
-MODEL_PATH = str(BASE_PATH / 'Pickles' / BEST_MODEL_PICKL_NAME)
-PIPE_PATH = str(BASE_PATH / 'Pickles' / PIPE_NAME)
+MODEL_PATH = str(BASE_PATH / BEST_MODEL_PICKL_NAME)
+PIPE_PATH = str(BASE_PATH / PIPE_NAME)
 
 TEMPLATES = Jinja2Templates(directory=str(BASE_PATH / "dashboard"))
 
