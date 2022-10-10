@@ -1,3 +1,5 @@
 .ipynb_checkpoints/
 __pycache__/
 Dataset/clean_data.csv
+.vs
+.vscode
