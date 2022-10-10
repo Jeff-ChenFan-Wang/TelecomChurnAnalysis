@@ -1,5 +1,8 @@
 # Telecom Customer Churn Prediction
-Due to the interchangeability of telecommunication services, the industry sees monopolistic competition with each industry player vying hard to not only gain subscribers, but retain existing ones as well. Hence, many telecom companies constantly create and update churn prediction models to predict whether a customer would leave their services for a competitor. A telecom provider can then offer incentives to a customer with high churn probability, in so preventing them from leaving for a competitor. 
+Due to the interchangeability of telecommunication services, the industry sees monopolistic competition with each industry player vying hard to not only gain subscribers, but retain existing ones as well. Hence, many telecom companies constantly create and update churn prediction models to predict whether a customer would leave their services for a competitor. A telecom provider can then offer incentives to a customer with high churn probability, in so preventing them from leaving for a competitor.
+
+View Exploratory Data Analysis Notebook: [Here](https://github.com/Jeff-ChenFan-Wang/TelecomChurnAnalysis/blob/master/NotebookPDFs/EDA.pdf). <br>
+View Model Building Notebook: [Here](https://github.com/Jeff-ChenFan-Wang/TelecomChurnAnalysis/blob/master/NotebookPDFs/Model.pdf).
 
 ## Description
 This project aims to predict a churn score for an U.S based telecommunication company, the data of which was originally provided by an IBM thinktank. 
