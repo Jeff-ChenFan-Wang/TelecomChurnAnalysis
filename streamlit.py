@@ -54,7 +54,7 @@ if st.button('Start Prediction'):
         )
         
         churn_result = output.json()['churn_result']
-        churn_prob = output.json()['churn_result']
+        churn_prob = output.json()['churn_probability']
         st.write(churn_result)
         st.write(churn_prob)
 
