@@ -23,7 +23,6 @@ Project Pipeline:
  3. FastAPI parses input and uses trained classifier model to predict whether the customer would churn
  4. Prediction result is sent back to user interface
 
-TechStack
 Python Version: 3.10 <br>
 Packages: `Scikit-Learn, XGBoost, LightGBM, Pandas, Numpy, FastAPI, Streamlit, Docker` <br>
 Cloud Services: `Heroku, AWS Fargate, AWS ECR`<br>
