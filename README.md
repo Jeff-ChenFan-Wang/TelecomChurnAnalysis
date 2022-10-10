@@ -6,11 +6,11 @@ View Exploratory Data Analysis Notebook: [Here](https://github.com/Jeff-ChenFan-
 View Model Building Notebook: [Here](https://github.com/Jeff-ChenFan-Wang/TelecomChurnAnalysis/blob/master/Model.ipynb).
 
 ## Description
-### View Deployed Webapp at: https://jeffwang-telecomchurn.herokuapp.com/<br>
+### View Deployed Webapp at: https://jeffwang-telecomchurn.herokuapp.com/<br> 
 <br>
 <img src = "readmeImgs/demo.png" width = 300><br>
 
-This project aims to predict a customer's churn probability for an U.S based telecommunication company, the data of which was originally provided by an IBM thinktank. 
+This project aims to predict a customer's churn probability for a U.S based telecommunication company, the data of which was originally provided by an IBM thinktank. 
 
 
 
@@ -35,10 +35,10 @@ Cloud Services: `Heroku, AWS Fargate, AWS ECR`<br>
         - XGBoost
         - LightGBM
     - The final estimator is combined with another Logistic regression (a final estimator with XGBoost was tested but was much longer to train and surprisingly didn't yield better results)
- - FastAPI loads pickle files and exposes an endpoint for prediction
- - FastAPI is built into a Docker image
- - FastAPI Docker image is pushed to AWS ECR
- - FastAPI Docker container is deployed on AWS Fargate cluster by ECS
+ - FastAPI loads classifier and pipeline pickle files, then exposes an endpoint for prediction
+ - FastAPI is then built into a Docker image
+    - FastAPI Docker image is pushed to AWS ECR
+    - FastAPI Docker container is deployed on AWS Fargate cluster by ECS
  - Streamlit frontend is deployed on Heroku directly
 
 I'll admit this techstack is a little overengineered since I wanted practice with tools such as Docker and FastAPI (later once the AWS bill starts ramping up I may simplify it down to the barebones).<br>
