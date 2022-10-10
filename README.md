@@ -23,11 +23,18 @@ Project Pipeline:
  3. FastAPI parses input and uses trained classifier model to predict whether the customer would churn
  4. Prediction result is sent back to user interface
 
+**Techstack Setup** <br>
 Python Version: 3.10 <br>
 Packages: `Scikit-Learn, XGBoost, LightGBM, Pandas, Numpy, FastAPI, Streamlit, Docker` <br>
-Cloud Services: `Heroku, AWS Fargate, AWS ECR`<br><br>
-**Techstack Setup**
+Cloud Services: `Heroku, AWS Fargate, AWS ECR`<br>
  - Model is trained on local machine with the final classifier and data processing pipeline exported as pickle files
+    - The final classifier is an ensemble Stacking Classifier combining 5 different models:
+        - Logistic Regression (Ridge-Lasso)
+        - K-Nearest Neighbor Classifier
+        - Random Forest Classifier
+        - XGBoost
+        - LightGBM
+    - The final estimator is combined with another Logistic regression (a final estimator with XGBoost was tested but was much longer to train and surprisingly didn't yield better results)
  - FastAPI loads pickle files and exposes an endpoint for prediction
  - FastAPI is built into a Docker image
  - FastAPI Docker image is pushed to AWS ECR
@@ -37,7 +44,7 @@ Cloud Services: `Heroku, AWS Fargate, AWS ECR`<br><br>
 I'll admit this techstack is a little overengineered since I wanted practice with tools such as Docker and FastAPI (later once the AWS bill starts ramping up I may simplify it down to the barebones).<br>
 
 ## Model Results for Business Stakeholders
-Most of the time metrics such as AUROC, F1-Scores, Average Precision etc. are too complicated to explain to other department personnel within the company without a degree of statistical background. Hence most business stakeholders prefer to use metrics such as gain and lift which we see below:<br>
+Most of the time metrics such as AUROC, F1-Scores, Average Precision etc. are too complicated to explain to personnel within the company without statistical backgrounds (These metrics however are still included in the Model training notebook). Hence most business stakeholders prefer to use metrics such as gain and lift instead, which we see below:<br>
 <img src = "readmeImgs/gainChart.png" width = 350><br>
  - The gain chart indicates the percentage of customers that will churn correctly identified by the model at each decile of customers. 
     - This gain chart therefore indicates that by just offering 20% of all our customers a special promotion for staying, we may be able to reduce churn rates by nearly 50%. <br>
