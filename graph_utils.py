@@ -10,6 +10,7 @@ from sklearn.metrics import (
     RocCurveDisplay, roc_auc_score, ConfusionMatrixDisplay
 )
 from sklearn.model_selection import GridSearchCV
+from fastapi import pipeline_factory
 
 def get_subplot_dim(num:int)->Tuple[int,int]:
     """returns row and column dimensions closest to a square
@@ -151,6 +152,36 @@ def graph_feat_importance(
     ax = sns.barplot(x=named_imps,y=named_imps.index)
     ax.set_title('Top 10 Most Important Features')
     
+def calculate_gain(estimator:BaseEstimator, y_test:np.ndarray[int],
+        x_test:np.ndarray[np.number])->pd.Series:
+    """returns a dataframe that calculates gain
+
+    Args:
+        estimator (BaseEstimator): trained sklearn estimator
+        y_test (np.ndarray[int]): true labels for test set
+        x_test (np.ndarray[np.number]): test set features
+
+    Returns:
+        pd.Series: Series with gain calculated at each decile, where
+            each index indicates which decile the gain value is for
+    """
+    ranked_probs = pd.DataFrame(
+        {'label':y_test,'prob':estimator.predict_proba(x_test)[:,1]}
+    ).sort_values('prob',ascending=False)
+    
+    ranked_probs['decile'] = np.digitize(
+        ranked_probs['prob'],
+        np.percentile(ranked_probs['prob'],range(100,-1,-10)),
+        right=False
+    )
+    ranked_probs['decile'] = ranked_probs['decile'].replace(0,1)
+    gain = (
+        ranked_probs.groupby('decile')['label'].sum()
+        .sort_index().cumsum()
+        /ranked_probs['label'].sum()
+    )
+    return gain
+    
 def graph_lift(
         estimator:BaseEstimator, y_test:np.ndarray[int],
         x_test:np.ndarray[np.number],figsize:Tuple[int,int]=(7,6))->None:
@@ -162,24 +193,34 @@ def graph_lift(
         x_test (np.ndarray[np.number]): test set features
         figsize (Tuple[int,int], optional): Figure size. Defaults to (12,8).
     """
-    ranked_probs = pd.DataFrame(
-        {'label':y_test,'prob':estimator.predict_proba(x_test)[:,1]}
-    ).sort_values('prob',ascending=False)
-    ranked_probs['decile'] = np.digitize(
-        ranked_probs['prob'],
-        np.percentile(ranked_probs['prob'],range(100,-1,-10)),
-        right=False
-    )
-    ranked_probs['decile'] = ranked_probs['decile'].replace(0,1)
-    gain = ranked_probs.groupby('decile')['label'].sum().sort_index().cumsum()
-    lift = gain/(gain.index*10)
+    gain = calculate_gain(estimator,y_test,x_test)
+    lift = gain*10/(gain.index)
     plt.figure(figsize=figsize)
     ax = sns.barplot(x=lift.index,y=lift)
     ax.set_title(f'Lift Chart for {estimator.__class__.__name__}')
     ax.set_ylabel('Lift')
     for i in ax.containers:
         ax.bar_label(i,)
+        
+def graph_gain(estimator:BaseEstimator, y_test:np.ndarray[int],
+        x_test:np.ndarray[np.number],figsize:Tuple[int,int]=(7,6))->None:
+    """Graphs the gain of the estimator
 
+    Args:
+        estimator (BaseEstimator): trained sklearn estimator
+        y_test (np.ndarray[int]): true labels for test set
+        x_test (np.ndarray[np.number]): test set features
+        figsize (Tuple[int,int], optional): Figure size. Defaults to (12,8).
+    """
+    gain = calculate_gain(estimator,y_test,x_test)
+    plt.figure(figsize=figsize)
+    ax = sns.lineplot(x=gain.index,y=gain,marker='o')
+    ax.set_title(f'Gain Chart for {estimator.__class__.__name__}')
+    ax.set_ylabel('Gain')
+    
+    for gain_val, decile in zip(gain, gain.index):
+        ax.annotate(f'({round(gain_val*100,1)})', xy=(decile-0.4,gain_val+0.02))
+        
 def pickle_model(model:object,file_path:str)->None:
     with open(file_path, 'wb') as handle:
         pickle.dump(model, handle, protocol=pickle.HIGHEST_PROTOCOL)
