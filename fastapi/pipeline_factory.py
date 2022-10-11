@@ -30,7 +30,7 @@ class CustomFeatureUnion(FeatureUnion):
         """
         return dict(self.transformer_list)[transformer_name]
     
-    def _set_feature_names(
+    def __set_feature_names(
             self,num_cols:np.ndarray[str], bin_cols:np.ndarray[str],
             cat_cols:np.ndarray[str], engin_cols:np.ndarray[str]):
         """Retains feature names so that feature_names_out() can
@@ -127,10 +127,10 @@ class PipelineFactory:
         Returns:
             Pipeline: sklearn preprocessing pipeline 
         """
-        num_pipe = self._make_numerical_pipe(normalize)
-        bin_pipe = self._make_bin_pipe()
-        cat_pipe = self._make_cat_pipe()
-        num_intrnt_serv_pipe = self._make_bool_count_pipe(counted_services)
+        num_pipe = self.__make_numerical_pipe(normalize)
+        bin_pipe = self.__make_bin_pipe()
+        cat_pipe = self.__make_cat_pipe()
+        num_intrnt_serv_pipe = self.__make_bool_count_pipe(counted_services)
         
         pipe_list = [
             ('num',num_pipe),
@@ -140,7 +140,7 @@ class PipelineFactory:
         
         if engineer:
             original_transformers = FeatureUnion(pipe_list.copy())
-            kmeans_pipe = self._make_kmeans_pipe(
+            kmeans_pipe = self.__make_kmeans_pipe(
                 original_transformers = original_transformers,
                 random_seed=random_seed
             )
@@ -152,7 +152,7 @@ class PipelineFactory:
             engin_cols = None
 
         combined = CustomFeatureUnion(pipe_list)
-        combined._set_feature_names(
+        combined.__set_feature_names(
             self.num_cols,
             self.bin_cols,
             self.cat_cols,
@@ -160,7 +160,7 @@ class PipelineFactory:
         )
         return combined
     
-    def _make_numerical_pipe(self, normalize:bool)->Pipeline:
+    def __make_numerical_pipe(self, normalize:bool)->Pipeline:
         """make a sklearn pipeline for numerical features
 
         Args:
@@ -190,7 +190,7 @@ class PipelineFactory:
             ])
         return num_pipe
     
-    def _make_bin_pipe(self)->Pipeline:
+    def __make_bin_pipe(self)->Pipeline:
         """make a sklearn pipeline for binary features
 
         Returns:
@@ -207,7 +207,7 @@ class PipelineFactory:
         ])
         return bin_pipe
     
-    def _make_cat_pipe(self)->Pipeline:
+    def __make_cat_pipe(self)->Pipeline:
         """make a sklearn pipeline for categorical features
 
         Returns:
@@ -226,7 +226,7 @@ class PipelineFactory:
         ])
         return cat_pipe
     
-    def _make_bool_count_pipe(self, feat_names:List[str])->Pipeline:
+    def __make_bool_count_pipe(self, feat_names:List[str])->Pipeline:
         """pipeline that counts number of true values in each row
 
         Args:
@@ -248,7 +248,7 @@ class PipelineFactory:
         ])
         return count_pipe
     
-    def _make_kmeans_pipe(self, original_transformers:FeatureUnion,
+    def __make_kmeans_pipe(self, original_transformers:FeatureUnion,
                           random_seed:int)->Pipeline:
         """Create a pipeline that creats
 
