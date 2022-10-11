@@ -34,7 +34,6 @@ Cloud Services: `Heroku, AWS Fargate, AWS ECR`<br>
         - Random Forest Classifier
         - XGBoost
         - LightGBM
-    - The final estimator is combined with another Logistic regression (a final estimator with XGBoost was tested but was much longer to train and surprisingly didn't yield better results)
  - FastAPI loads classifier and pipeline pickle files, then exposes an endpoint for prediction
  - FastAPI is then built into a Docker image
     - FastAPI Docker image is pushed to AWS ECR
@@ -51,7 +50,7 @@ Most of the time metrics such as AUROC, F1-Scores, Average Precision etc. are to
 
  <img src = "readmeImgs/liftChart.png" width = 350><br>
  - The lift chart indicates how many times more customers that will churn are correctly identified by our model at each decile of data than if we just randomly sample that decile of data.
-    - This lift chart therefore indicates that if we can only select 10% of all customers, our model can correctly identify ≈2.7 times more customers that will churn than just randomly choosing. <br>
+    - This lift chart therefore indicates that if we can only select 10% of all customers, our model can correctly identify ≈2.7 times more customers that will churn than just randomly choosing the 10%. <br>
 
 # Reproducing Results
 ## Environment
