@@ -6,7 +6,7 @@ View Exploratory Data Analysis Notebook: [Here](https://github.com/Jeff-ChenFan-
 View Model Building Notebook: [Here](https://github.com/Jeff-ChenFan-Wang/TelecomChurnAnalysis/blob/master/Model.ipynb).
 
 ## Description
-### View Deployed Webapp at: https://jeffwang-telecomchurn.herokuapp.com/<br> 
+### View Deployed Webapp at: https://jeffwang-telecomchurn.herokuapp.com/<br> (May take a while to load since cluster is booted up only upon request) 
 <br>
 <img src = "readmeImgs/demo.png" width = 300><br>
 
